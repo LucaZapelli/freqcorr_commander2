@@ -1,0 +1,181 @@
+#####
+##### Qualitative list of modifications module by module (skipping 'cleanup' routines)
+#####
+
+>> comm_beam_mod.f90:
+        >> NEW GLOBAL VARIABLES: - real beams_fcn(:,:,:)
+                                 - int numband
+                                 - lgt freq_corr_noise
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - initialize_beam_mod: * Initializing 'numband' and 'freq_corr_noise'
+                                                        * Collecting all bands' beams in 'beams_fcn'
+                                 - multiply_with_beam: * If a 'band_id_in' is passed, the convolution is performed using the specific beam
+
+>> comm_bp_mod.f90:
+        >> NEW GLOBAL VARIABLES: - int numband
+                                 - lgt freq_corr_noise
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - initialize_bp_mod: * Initializing 'numband' and 'freq_corr_noise'
+
+>> comm_cgd_matmul_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - compute_signal_rhs: * Generalizing 'map_sum = N^-1 residual + N^-1 rand' as 
+                                                                      'map_sum = SUM_i [N(i)^-1 residuals(i)] + SUM_i [N(i)^-1 rand]'
+                                 - compute_At_invN_A_x: * Generalizing 'map_sum = FT^-1[B alm]' as
+                                                                       'map_sums(i) = SUM_i {FT^-1[B(i) alms(i)]}'
+                                                        * Generalizing 'map_sum += temp + fg' as
+                                                                       'map_sums(i) += temps(i) + fgs(i)'
+                                                        * Generalizing 'map_sum = N^-1 map_sum' as
+                                                                       'map_sum = SUM_i [N(i)^-1 map_sums(i)]'
+
+>> comm_cgd_precond_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES
+        >> MODDED SUBROUTINES:   - initialize_preconditioner: * Generalizing 'M = fg N^-1 fg' as
+                                                                             'M = SUM_i [fg N(i)^-1 fg(i)]'
+
+>> comm_chisq_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - compute_total_chisq: * Generalizing 'signal = FT^-1[B alm] * spec2data' as
+                                                                       'signals(i) = FT^-1[B(i) alms(i)] * spec2datas(i)'
+                                                        * Generalizing 'signal += fg' as
+                                                                       'signals(i) += fgs(i)'
+                                                        * Generalizing 'residual = cmbmap - signal' as
+                                                                       'residuals(i) = cmbmaps(i) - signals(i)'
+                                                        * Generalizing 'chisq = [sqrt(N)^-1 residual]^2' as
+                                                                       'chisq = residual SUM_i [N(i)^-1 - residuals(i)]'
+                                 - sample_gain: * Generalizing 'residual = cmbmap - temp - fg' as
+                                                               'residuals(i) = cmbmaps(i) - temps(i) - fgs(i)'
+                                                * Generalizing 'signal = FT^-1[B alm] * spec2data + fg' as
+                                                               'signals(i) = FT^-1[B(i) alms(i)] * spec2datas(i) + fgs(i)'
+                                                * Generalizing '1) signal *= mask_calib / bp' 
+                                                               '2) residual *= mask_calib' as
+                                                               '1) signals(i) *= mask_calibs(i) / bps(i)'
+                                                               '2) residuals(i) *= mask_calibs(i)' 
+                                                * Generalizing '1) sigma = signal [N^-1 signal * mask_calib]'
+                                                               '2) mu = residual [N^-1 signal * mask_calib]' as
+                                                               '1) sigma = signal SUM_i [N(i)^-1 signals(i) * mask_calibs(i)]'
+                                                               '2) mu = residual SUM_i [N(i)^-1 signals(i) * mask_calibs(i)]'
+                                 - sample_bandpass: * Minor lexical changes
+
+>> comm_Cl_util_mod.f90:
+        >> NEW GLOBAL VARIABLES: - int numband
+                                 - lgt freq_corr_noise
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - initialize_Cl_util_mod: * Initializing 'numband' and 'freq_corr_noise'
+
+>> comm_data_mod.f90:
+        >> NEW GLOBAL VARIABLES: - real (private) reg_noises_fcn(:)
+                                 - real cmbmaps_fcn(:,:,:)
+                                 - real residuals_fcn(:,:,:)
+                                 - real mask_calibs_fcn(:,:,:)
+                                 - real fg_pix_spec_responses_fcn(:,:,:,:)
+                                 - real fg_temps_fcn(:,:,:,:)
+                                 - real inv_Ns_lowres_fcn(:,:,:,:)
+                                 - real inv_Ns_scaled_fcn(:,:,:,:)
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - initialize_data_mod: * Collecting all bands' reg_noises in 'reg_noises_fcn'
+                                                        * Generalizing 'temp_names = FG_TEMPLATE' as
+                                                                       'temp_names(i) = FG_TEMPLATEs(i)'
+                                                        * Collecting all bands' mask_calibs in 'mask_calibs_fcn'
+                                                        * Generalizing 'temp initialization' as
+                                                                       'all temps(i) initialization'
+                                                        * Generalizing 'inv_N_lowres initialization' as
+                                                                       'inv_Ns_lowres_fcn(i) initialization'
+                                 - read_map_realization: * Generalizing 'cmbmap = reg_noise + rand' as
+                                                                        'cmbmaps(i) = reg_noises(i) + rand' as
+                                 - compute_residual: * Generalizing 'residual = cmbmap - temp - fg' as
+                                                                    'residuals(i) = cmbmaps(i) - temps(i) - fgs(i)'
+                                 - output_component_map: * Minor lexical changes
+                                 - output_mixing_matrix: * Minor lexical changes
+                                 - output_signal_correlations: * Minor lexical changes
+                                 - output_ml_map_engine: * Generalizing 'Ft_invN_d = fg N^-1 residual' as
+                                                                      'Ft_invN_d = fg SUM_i [N^-1 residual]'
+                                                         * Generalizing 'Ft_invN_F = fg N^-1 fg' as
+                                                                        'Ft_invN_F = fg SUM_i [N^-1 fgs(i)]'
+                                                           >> also the N^-1 fg matrix - vector product is simplified using a 
+                                                                       N(j)^-1 fg(j) vector - scalar product
+
+>> comm_fg_component_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - update_fg_pix_response_map: * Generalized to update all bands' spectral responses
+
+>> comm_fg_mod.f90:
+        >> NEW GLOBAL VARIABLES: - real (private) my_inv_Ns_fcn(:,:)
+                                 - real (private) all_inv_Ns_fcn(:,:,:)
+                                 - real (private) invN_regs_fcn(:,:,:)
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - sample_fg_pix_response_map: * Minor lexical changes
+                                 - sample_spec_index_single_region: * Collecting all bands' reg_noises in 'invN_regs_fcn'
+                                 - lnL_specind_ARS: * Generalizing 'lnL -= - 0.5 * f * N_reg^-1 * f' as
+                                                                   'lnL -= - 0.5 * f * SUM_i [N_regs(i)^-1 * fs(i)]' 
+                                                    * Generalizing 'lnL_jeffreys = log(sqrt(sum(df * N^-1 * df)))' as
+                                                                   'lnL_jeffreys = log(sqrt(sum(df * SUM_i [N(i)^-1 * dfs(i)])))'
+                                                      >> although these are useless lines of code
+                                 - init_ind: * Initializing 'my_inv_Ns_fcn'
+                                 - fg_init_chisq: * Generalizing 'chisq = SUM_i [(res(i)-s(i))**2 * N(i)^-1]' as
+                                                                 'chisq = SUM_i {(res(i)-s(i)) * SUM_j [N(j)^-1 (res(j)-s(j))]}'
+                                 - enforce_pos_amp: * Generalizing 'inv_N_local' to be non-diagonal
+                                                    * Generalizing 'chisq = SUM_i [(res(i)-s(i))**2 * N(i)^-1]' as
+                                                                   'chisq = SUM_i {(res(i)-s(i)) * SUM_j [N(j)^-1 (res(j)-s(j))]}'
+
+>> comm_global_par_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - sample_global_fg_par: * Minor lexical changes
+                                 - optimize_priors: * Minor lexical changes
+
+>> comm_mp_mod.f90:
+        >> NEW GLOBAL VARIABLES:
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - sample_spectral_param_map: * Minor lexical changes
+                                 - init_ind_by_nonlin_search: * Minor lexical changes
+                                 - enforce_pos_amps: * Minor lexical changes
+
+>> comm_N_mult_mod.f90:
+        >> NEW GLOBAL VARIABLES: - int numband
+                                 - lgt freq_corr_noise
+        >> NEW SUBROUTINES:      - initialize_invN_rms_fcn: TAKES >> band_id_in = main band index
+                                                                  >> band_id_in2 = secondary band index
+                                                            DOES * Initializes reg_noise, invN_rms and sqrt_invN_rms
+                                 - initialize_invN_dense_fcn: TAKES >> band_id_in = main band index
+                                                                    >> band_id_in2 = secondary band index
+                                                              DOES * Initializes map_id_fcn to band_id_in2
+                                                                   * Initializes invN_dense and sqrt_invN_dense
+                                 - multiply_by_inv_N_column: TAKES >> map_in = map to be multiplied
+                                                                   >> row = value position in the map, i.e. the pixel index
+                                                                   >> stokes = stokes index
+                                                                   >> N_format = noise format
+                                                                   >> do_sqrt = if .true. multipies sqrt(N)^-1, else N^-1
+                                                             DOES * If noise format is 'rms' multiplies the stokes/pix N^-1 
+                                                                    value by map_in
+                                                                  * If noise format is 'dense' does the following:
+                                                                    >> applies ring2nest conversion if needed
+                                                                    >> saves the only non-zero pixel in map_in into 'value'
+                                                                    >> If one processor is involved multiplies the specific
+                                                                       N^-1 column by value
+                                                                    >> If two or more processors are involved exploits the
+                                                                       pre-existing dgemv matrix - vector multiplication routine
+                                                                    >> applies nest2ring conversion if needed
+                                                                    >> rescales the vector by the relative band's noise amplitude
+        >> MODDED SUBROUTINES:   - initialize_N_mult_mod: * If freq_corr_noise is .true., all the objects
+                                                            are initialized on the main band. These objects are
+                                                            >> reg_scale > reg_noise
+                                                            >> invN_rms
+                                                            >> sqrt_invN_rms
+                                                            >> invN_dense
+                                                            >> sqrt_invN_dense
+                                 - get_noise_map: * Generalizing inv_N rescaling by the specific band's noise amplitude
+
+>> commander.f90:
+        >> NEW GLOBAL VARIABLES: - lgt freq_corr_noise
+        >> NEW SUBROUTINES:
+        >> MODDED SUBROUTINES:   - MAIN: * 'freq_corr_noise' is read from parameter file
+                                         * all modules are initialized based on the noise correlation format
+                                 - compute_single_chain: * Generalizing subroutine calls
+                                                         * Generalizing 'inv_Ns_scaled_fcn' to every band
+                                                         * Generalizing file output streams
+                                 - output_pixel_to_file: * Generalizing the 'print-out-data' format in file writing
