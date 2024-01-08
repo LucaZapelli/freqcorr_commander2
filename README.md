@@ -33,6 +33,6 @@ real(dp),     allocatable, dimension(:,:,:),  private :: invN_regs_fcn
 # New parameters/files needed in the 'parameter_file.txt'
 
 FREQ_CORR_NOISE          = .true. # or .false. (needed in any case)
-NOISE_RMS0101            = '..'..' # instead of standard NOISE_RMS01 (needed only if 'freq_corr_noise' is true)      > it's a .fits map
+NOISE_RMS0101            = '../..' # instead of standard NOISE_RMS01 (needed only if 'freq_corr_noise' is true)      > it's a .fits map
 INV_N_MAT0101            = '../..' # instead of standard INV_N_MAT01 (needed only if 'freq_corr_noise' is true)      > it's a .unf file
 SQRT_INV_N_MAT0101       = '../..' # instead of standard SQRT_INV_N_MAT01 (needed only if 'freq_corr_noise' is true) > it's a .unf file
