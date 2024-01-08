@@ -7,4 +7,32 @@ Generelization of Commander2 code for frequency-correlated noise:
 4. Chi^2 computation formula has been changed, replacing the sqrt{N^-1} multiplication with the standard N^-1 one. The reason is that the new routine treats
    differently the rhs e and the lhs map terms, so that the multiplication of the two no longer equals lhs^2.
 
-For more information check out the QUALITATIVE_LOG.md and QUANTITATIVE_LOG.md files (given in order of how detailed the list of modifications is).
+For more information check out the QUALITATIVE_LOG.txt and QUANTITATIVE_LOG.txt files (given in order of how detailed the list of modifications is).
+
+
+##########################################################################################################################################
+
+# List of new global variables:
+
+integer(i4b) :: band_iter, map_id_fcn
+logical(lgt) :: freq_corr_noise
+real(dp),     allocatable, dimension(:,:,:)           :: beams_fcn
+real(dp),     allocatable, dimension(:),      private :: reg_noises_fcn
+real(dp),     allocatable, dimension(:,:,:)           :: cmbmaps_fcn, residuals_fcn
+real(dp),     allocatable, dimension(:,:,:)           :: mask_calibs_fcn
+real(dp),     allocatable, dimension(:,:,:,:)         :: fg_pix_spec_responses_fcn
+real(dp),     allocatable, dimension(:,:,:,:)         :: fg_temps_fcn
+real(dp),     allocatable, dimension(:,:,:,:)         :: inv_Ns_lowres_fcn, inv_Ns_scaled_fcn
+real(dp),     allocatable, dimension(:,:),    private :: my_inv_Ns_fcn
+real(dp),     allocatable, dimension(:,:,:),  private :: all_inv_Ns_fcn
+real(dp),     allocatable, dimension(:,:,:),  private :: invN_regs_fcn
+
+
+##########################################################################################################################################
+
+# New parameters/files needed in the 'parameter_file.txt'
+
+FREQ_CORR_NOISE          = .true. # or .false. (needed in any case)
+NOISE_RMS0101            = '..'..' # instead of standard NOISE_RMS01 (needed only if 'freq_corr_noise' is true)      > it's a .fits map
+INV_N_MAT0101            = '../..' # instead of standard INV_N_MAT01 (needed only if 'freq_corr_noise' is true)      > it's a .unf file
+SQRT_INV_N_MAT0101       = '../..' # instead of standard SQRT_INV_N_MAT01 (needed only if 'freq_corr_noise' is true) > it's a .unf file
