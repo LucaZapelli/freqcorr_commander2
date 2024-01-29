@@ -12,8 +12,8 @@ module comm_beam_mod
   real(dp),     allocatable, dimension(:,:)   :: beam, beam_lowres
   real(dp),     allocatable, dimension(:,:,:) :: beams_fcn
 
-  integer(i4b) :: numband
-  logical(lgt) :: freq_corr_noise
+  integer(i4b), private :: numband
+  logical(lgt), private :: freq_corr_noise
 
 contains
 
