@@ -46,7 +46,7 @@ program commander
   integer(i4b)        :: precompute_plms, nband, num_proc_per_band
   integer(i4b)        :: irow, icol, verbosity, comm_master, band_id, base_seed
   integer(i4b)        :: comm_chain, comm_alms, comm_data, myid_chain, myid_alms, myid_data
-  logical(lgt)        :: slave_work, master, polar, freq_corr_noise
+  logical(lgt)        :: slave_work, master, polar
   type(planck_rng)    :: rng_handle
   character(len=128)  :: paramfile, filename, solution_method, chain_dir, operation
 
@@ -132,7 +132,6 @@ program commander
   call get_parameter(paramfile, 'PRECOMPUTE_PLMS',    par_int=precompute_plms)
   call get_parameter(paramfile, 'POLARIZATION',       par_lgt=polar)
   call get_parameter(paramfile, 'CHAIN_DIRECTORY',    par_string=chain_dir)
-  call get_parameter(paramfile, 'FREQ_CORR_NOISE',    par_lgt=freq_corr_noise)
   if (polar) then
      nmaps_sht = 3
   else
@@ -160,7 +159,6 @@ program commander
      write(*,*) '          Nside                             = ', nside_sht
      write(*,*) '          Lmax                              = ', lmax_sht
      write(*,*) '          Polarization                      = ', polar
-     write(*,*) '          Frequency correlated noise        = ', freq_corr_noise
      write(*,*) ''
   end if
 
@@ -332,16 +330,16 @@ program commander
         allocate(fg_param_map(0:npix-1, nmaps, num_fg_par))
         call initialize_index_map(paramfile, rng_handle, fg_param_map)
         if (.not. freq_corr_noise) then
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = fg_param_map)
         else
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = fg_param_map)
         end if
         deallocate(fg_param_map)
      else
         if (.not. freq_corr_noise) then
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = fg_param_map)
         else
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = fg_param_map)
         end if
      end if
   end if
@@ -2013,7 +2011,8 @@ contains
                         & pixel=pixel, pol=j) * fg_amp(j,k) / scale
                    spec_tot(q) = spec_tot(q) + f
                    if (f /= 0.d0) write(unit,fmt='(3e16.8)') bp(q)%nu_c/1d9, f, 0.d0
-                end if             else
+                end if
+             else
                 if (invN(j,q) > 0.d0) then
                    scale = spec2data(q, intype='uK_ant', outtype=bp(q)%unit)
                    f = get_effective_fg_spectrum(fg_components(k), q, fg_par%comp(k)%p(j,:), &

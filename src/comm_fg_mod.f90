@@ -199,7 +199,7 @@ contains
                          else
                             call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
                                  & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth,mystat, &
-                                 & chisq_in=chisq_in, chisq_out=chisq_out, inv_N_fcn)
+                                 & chisq_in=chisq_in, chisq_out=chisq_out, inv_Ns_rms_fcn=inv_N_fcn)
                          end if
                          chisq_prop_rms = chisq_prop_rms + chisq_out
                          chisq0_rms     = chisq0_rms     + chisq_in
@@ -217,7 +217,7 @@ contains
                       else
                          call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
                               & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth, &
-                              & mystat, chisq_in=chisq_in, chisq_out=chisq_out, inv_N_fcn)
+                              & mystat, chisq_in=chisq_in, chisq_out=chisq_out, inv_Ns_rms_fcn=inv_N_fcn)
                       end if
                       if (par_prop(fg_components(i)%indregs(j)%regions(q)%pix(1,1),1,p) /= &
                            & par_prop(fg_components(i)%indregs(j)%regions(q)%pix(1,1),1,p)) then

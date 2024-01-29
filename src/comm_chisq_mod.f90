@@ -196,7 +196,7 @@ contains
                 if (band_iter == map_id) then
                    call mpi_bcast(alms_work, size(alms_work), MPI_DOUBLE_PRECISION, root, comm_data, ierr)
                 end if
-                call multiply_with_beam(alms_work, band_iter)
+                call multiply_with_beam(alms_work, band_id_in=band_iter)
                 call convert_harmonic_to_real_space(my_signals_fcn(band_iter,:,:), alms_work)
              else
                 call convert_harmonic_to_real_space(my_signals_fcn(band_iter,:,:))
@@ -323,8 +323,8 @@ contains
           if (.not. freq_corr_noise) then
              my_chisq_map(pixels(i),j) = invN_residual1(i,j)**2 + invN_residual2(i,j)**2
           else
-             my_chisq_map(pixels(i),1) = residuals_fcn_local(map_id,i,j)*invN_residual1(i,j)) + &
-                  & residuals_fcn_local(map_id,i,j)*invN_residual2(i,j))
+             my_chisq_map(pixels(i),1) = residuals_fcn_local(map_id,i,j)*invN_residual1(i,j) + &
+                  & residuals_fcn_local(map_id,i,j)*invN_residual2(i,j)
           end if
        end do
     end do
@@ -649,7 +649,7 @@ contains
              if (myid_alms == root) then
                 allocate(alms_work(numcomp, nmaps))
                 if (myid_data == root) alms_work = s%cmb_amp
-                call multiply_with_beam(alms_work, band_iter)
+                call multiply_with_beam(alms_work, band_id_in=band_iter)
                 call convert_harmonic_to_real_space(my_signals_fcn(band_iter,:,:), alms_work)
                 deallocate(alms_work)
              else
@@ -1029,10 +1029,10 @@ contains
           call update_tau(delta_prop)
           call update_eff_fg_spectrum
           if (myid_chain == root) then
-             if (.not. freq_corr_noise) then
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, index_map)
+             if (.not. freq_corr_noise .and. ) then
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
              else
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, index_map)
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
              end if
              call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq_prop)
           else
@@ -1121,9 +1121,9 @@ contains
 
           if (myid_chain == root) then
              if (.not. freq_corr_noise) then
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, index_map)
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
              else
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, index_map)
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
              end if
              call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq_prop)
           else
@@ -1178,9 +1178,9 @@ contains
        call update_eff_fg_spectrum
        if (myid_chain == root) then
           if (.not. freq_corr_noise) then
-             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, index_map)
+             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
           else
-             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, index_map)
+             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
           end if
        else
           if (.not. freq_corr_noise) then
@@ -1210,9 +1210,9 @@ contains
     call update_eff_fg_spectrum
     if (myid_chain == root) then
        if (.not. freq_corr_noise) then
-          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, index_map)
+          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
        else
-          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, index_map)
+          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
        end if
        call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq)
     else

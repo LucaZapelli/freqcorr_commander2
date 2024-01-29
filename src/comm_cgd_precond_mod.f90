@@ -456,6 +456,7 @@ contains
              call convert_complex_to_real_alms(tmp_alms, alms_noise(:,2:2,i))
              call convert_complex_to_real_alms(tmp_alms, alms_noise(:,3:3,i))
           end if
+       end do
 
        deallocate(inv_N)
        deallocate(tmp_alms)

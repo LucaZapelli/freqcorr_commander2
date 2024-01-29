@@ -287,7 +287,7 @@ contains
     real(dp), dimension(0:,1:,1:), intent(in) :: index_map
 
     call mpi_bcast(12, 1, MPI_INTEGER, root, comm_chain, ierr)
-    call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, index_map)
+    call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
     
   end subroutine update_fg_pix_response_maps
 

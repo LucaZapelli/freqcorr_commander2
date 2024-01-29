@@ -299,7 +299,7 @@ contains
              if (myid_alms == root) then
                 allocate(alms1(numcomp,nmaps))
                 alms1 = spec2data(band_iter, cmb=.true.) * v1%cmb_amp
-                call multiply_with_beam(alms1, band_iter)
+                call multiply_with_beam(alms1, band_id_in=band_iter)
                 call wall_time(t1)
                 call convert_harmonic_to_real_space(map, alms1)
                 call wall_time(t2)

@@ -465,7 +465,7 @@ contains
           end do
        end if
 
-       do = 1, numband
+       do i = 1, numband
           if (sample_T_modes) then
              call initialize_mono_and_dipole_temp(nside, fg_temp_lowres(:,1,i,1:4))
           end if
@@ -1336,7 +1336,7 @@ contains
     character(len=512) :: chain_dir
     real(dp)     :: scale
     real(dp), allocatable, dimension(:)   :: Ft_invN_d, buffer1, x
-    real(dp), allocatable, dimension(:)   :: invN_d_fcn
+    real(dp), allocatable, dimension(:,:) :: invN_d_fcn
     real(dp), allocatable, dimension(:,:) :: F, Ft_invN_F, buffer2, map, cov, rms
 
     if (myid_chain == root) call get_parameter(paramfile, 'CHAIN_DIRECTORY',    par_string=chain_dir)
@@ -1371,7 +1371,7 @@ contains
           end do
        end do
     else
-       allocate(invN_d_fcn(0:npix-1,nmaps))
+       allocate(invN_d_fcn(0:map_size-1,nmaps))
        invN_d_fcn = 0.d0                                                   
        do band_iter = 1, numband                                        
           map = residuals_fcn(band_iter,:,:) 

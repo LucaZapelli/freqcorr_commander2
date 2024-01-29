@@ -17,9 +17,6 @@ module comm_Cl_util_mod
   integer(i4b)                                  :: num_Cl_bin
   integer(i4b),     allocatable, dimension(:,:) :: Cl_bins
   character(len=1), allocatable, dimension(:,:) :: Cl_bin_stat
-
-  integer(i4b) :: numband
-  logical(lgt) :: freq_corr_noise
  
   integer(i4b),               private :: nspec, lmax
   integer(i4b), parameter,    private :: MAX_NUM_BIN = 10000
@@ -40,10 +37,8 @@ contains
     real(dp), allocatable, dimension(:) :: input_vals
 
     unit = getlun()
-    call get_parameter(paramfile, 'NUMBAND',            par_int=numband)
     call get_parameter(paramfile, 'POLARIZATION',       par_lgt=polarization)
     call get_parameter(paramfile, 'LMAX',               par_int=lmax)
-    call get_parameter(paramfile, 'FREQ_CORR_NOISE',    par_lgt=freq_corr_noise)
 
     if (polarization) then
        nspec = 6

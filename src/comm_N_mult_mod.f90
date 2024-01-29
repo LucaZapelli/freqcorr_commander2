@@ -18,8 +18,7 @@ module comm_N_mult_mod
 
   integer(i4b) :: mask_state
 
-  integer(i4b),                              private :: comm_alms, myid_alms, root, numprocs
-  integer(i4b)                                       :: numband
+  integer(i4b),                              private :: comm_alms, myid_alms, root, numprocs, numband
   integer(i4b),                              private :: comm_chain, myid_chain, map_id, map2_id, map_id_fcn
   integer(i4b),                              private :: nside, npix, nmaps, map_size, lmax, numcomp
   integer(i4b),                              private :: inv_N_order
@@ -27,6 +26,7 @@ module comm_N_mult_mod
   type(planck_rng),                          private :: rng_handle
 
   character(len=128)                                     :: noise_format
+  character(len=128),                            private :: paramfile
   real(dp),     allocatable, dimension(:,:,:)            :: invN_rms, sqrt_invN_rms
   real(dp),     allocatable, dimension(:,:),     private :: invN_dense, sqrt_invN_dense
   real(dp),     allocatable, dimension(:,:,:),   private :: invN_pixblock, sqrt_invN_pixblock
@@ -34,7 +34,7 @@ module comm_N_mult_mod
   integer(i4b), allocatable, dimension(:),       private :: mask2map
   real(dp),     allocatable, dimension(:)                :: noiseamp
 
-  logical(lgt) :: freq_corr_noise
+  logical(lgt), private :: freq_corr_noise
 
 
   interface multiply_by_inv_N
@@ -48,11 +48,11 @@ module comm_N_mult_mod
 
 contains
 
-  subroutine initialize_N_mult_mod(paramfile, comm_alms_in, comm_chain_in, map_id_in)
+  subroutine initialize_N_mult_mod(paramfile_, comm_alms_in, comm_chain_in, map_id_in)
     implicit none
 
     integer(i4b),                intent(in) :: map_id_in, comm_alms_in, comm_chain_in
-    character(len=128),          intent(in) :: paramfile
+    character(len=128),          intent(in) :: paramfile_
 
     integer(i4b)       :: i, j, k, l, m, n, ind, ierr, map, pix, unit
     logical(lgt)       :: polarization, sample_inside_mask
@@ -73,6 +73,7 @@ contains
     mask_state = OUTSIDE_MASK
 
     ! Read general parameters
+    paramfile = paramfile_
     map_id = map_id_in
     call int2string(map_id, map_text)
     if (freq_corr_noise) then
@@ -373,8 +374,7 @@ contains
     if (allocated(sqrt_invN_dense))    deallocate(sqrt_invN_dense)   
     if (allocated(invN_pixblock))      deallocate(invN_pixblock)     
     if (allocated(sqrt_invN_pixblock)) deallocate(sqrt_invN_pixblock)
-    if (allocated(pixels))             deallocate(invN_dense)        
-    if (allocated(invN_dense))         deallocate(pixels)            
+    if (allocated(invN_dense))         deallocate(invN_dense)            
     if (allocated(mask2map))           deallocate(mask2map)          
     if (allocated(noiseamp))           deallocate(noiseamp) 
 
@@ -459,11 +459,11 @@ contains
 
   end subroutine multiply_by_sqrt_inv_N_two_maps
 
-  subroutine multiply_by_inv_N_column(map_in, row, stokes, N_format, do_sqrt)
+  subroutine multiply_by_inv_N_column(map_in, row_, stokes, N_format, do_sqrt)
     implicit none
     
     real(dp),     dimension(0:,1:), intent(inout)  :: map_in
-    integer(i4b),                   intent(in)     :: row, stokes
+    integer(i4b),                   intent(in)     :: row_, stokes
     character(len=*),               intent(in), optional :: N_format
     logical(lgt),                   intent(in), optional :: do_sqrt
     
@@ -506,6 +506,8 @@ contains
                 end if
              end do
           end do
+       else
+          row = row_
        end if
        
        ! Multiply with N^-1
