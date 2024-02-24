@@ -2940,7 +2940,7 @@ QUESTIONS:
         >> MODDED SUBROUTINES:   - compute_signal_rhs: * Generalizing 'map_sum = N^-1 residual + N^-1 rand' as 
                                                                       'map_sum = SUM_i [N(i)^-1 residuals(i)] + SUM_i [N(i)^-1 rand]'
                                  - compute_At_invN_A_x: * Generalizing 'map_sum = FT^-1[B alm]' as
-                                                                       'map_sums(i) = SUM_i {FT^-1[B(i) alms(i)]}'
+                                                                       'map_sums(i) = FT^-1[B(i) alms(i)]'
                                                         * Generalizing 'map_sum += temp + fg' as
                                                                        'map_sums(i) += temps(i) + fgs(i)'
                                                         * Generalizing 'map_sum = N^-1 map_sum' as
