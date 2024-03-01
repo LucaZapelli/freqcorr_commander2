@@ -1031,10 +1031,11 @@ contains
           call update_tau(delta_prop)
           call update_eff_fg_spectrum
           if (myid_chain == root) then
-             if (.not. freq_corr_noise .and. ) then
+             if (.not. freq_corr_noise) then
                 call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
              else
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                       & fg_param_map_in = index_map)
              end if
              call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq_prop)
           else
@@ -1125,7 +1126,8 @@ contains
              if (.not. freq_corr_noise) then
                 call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
              else
-                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
+                call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                       & fg_param_map_in = index_map)
              end if
              call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq_prop)
           else
@@ -1182,7 +1184,8 @@ contains
           if (.not. freq_corr_noise) then
              call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
           else
-             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
+             call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                    & fg_param_map_in = index_map)
           end if
        else
           if (.not. freq_corr_noise) then
@@ -1214,7 +1217,8 @@ contains
        if (.not. freq_corr_noise) then
           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
        else
-          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = index_map)
+          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                 & fg_param_map_in = index_map)
        end if
        call compute_total_chisq(map_id, s, chisq_band_fullsky=chisq)
     else
