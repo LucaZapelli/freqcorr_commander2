@@ -467,7 +467,7 @@ contains
     character(len=*),               intent(in), optional :: N_format
     logical(lgt),                   intent(in), optional :: do_sqrt
     
-    integer(i4b)                        :: i, j, ierr
+    integer(i4b)                        :: i, j, row, ierr
     character(len=128)                  :: N_format_
     logical(lgt)                        :: do_sqrt_
     real(dp)                            :: value
@@ -489,9 +489,9 @@ contains
               
        ! Multiply with the inverse noise covariance matrix
        if (do_sqrt_) then
-          map_in = sqrt_invN_rms(row,stokes,mask_state)*map_in
+          map_in = sqrt_invN_rms(row_,stokes,mask_state)*map_in
        else
-          map_in = invN_rms(row,stokes,mask_state)*map_in
+          map_in = invN_rms(row_,stokes,mask_state)*map_in
        end if
            
     else if (trim(N_format_) == 'dense_matrix') then
