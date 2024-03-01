@@ -322,7 +322,8 @@ contains
              if (.not. fix_temp(l,map_id)) map_sum = map_sum + v1%temp_amp(l,map_id) * fg_temp(:,:,l)
           else
              do band_iter = 1, numband
-                if (.not. fix_temp(l,band_iter)) map_sums_fcn(band_iter,:,:) = map_sums_fcn(band_iter,:,:) + v1%temp_amp(l,band_iter) * fg_temps_fcn(band_iter,:,:,l)
+                if (.not. fix_temp(l,band_iter)) map_sums_fcn(band_iter,:,:) = map_sums_fcn(band_iter,:,:) &
+                        &+ v1%temp_amp(l,band_iter) * fg_temps_fcn(band_iter,:,:,l)
              end do
           end if
        end do
@@ -338,7 +339,8 @@ contains
           map_sum = map_sum + fg_pix_spec_response(:,:,l) * v1%fg_amp(pixels,:,l)
        else
           do band_iter = 1, numband
-             map_sums_fcn(band_iter,:,:) = map_sums_fcn(band_iter,:,:) + fg_pix_spec_responses_fcn(band_iter,:,:,l) * v1%fg_amp(pixels,:,l)
+             map_sums_fcn(band_iter,:,:) = map_sums_fcn(band_iter,:,:) &
+                     &+ fg_pix_spec_responses_fcn(band_iter,:,:,l) * v1%fg_amp(pixels,:,l)
           end do
        end if
     end do
