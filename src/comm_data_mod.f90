@@ -806,7 +806,8 @@ contains
              if (myid_chain == root) my_coeff = s%temp_amp
              if (band_iter == map_id) call mpi_bcast(my_coeff, size(my_coeff), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
              do j = 1, num_fg_temp
-                if (fix_temp(j,band_iter)) residuals_fcn(band_iter,:,:) = residuals_fcn(band_iter,:,:) - my_coeff(j,band_iter) * fg_temps_fcn(band_iter,:,:,j)
+                if (fix_temp(j,band_iter)) residuals_fcn(band_iter,:,:) = residuals_fcn(band_iter,:,:) &
+                        &- my_coeff(j,band_iter) * fg_temps_fcn(band_iter,:,:,j)
              end do
              deallocate(my_coeff)
           end if
@@ -817,7 +818,8 @@ contains
                 if (fg_components(i)%enforce_positive_amplitude) then
                    if (present(s)) a = s%fg_amp(:,:,i)
                    if (band_iter == map_id) call mpi_bcast(a, size(a), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
-                   residuals_fcn(band_iter,:,:) = residuals_fcn(band_iter,:,:) - fg_pix_spec_responses_fcn(band_iter,:,:,i) * a(pixels,:)
+                   residuals_fcn(band_iter,:,:) = residuals_fcn(band_iter,:,:) &
+                           &- fg_pix_spec_responses_fcn(band_iter,:,:,i) * a(pixels,:)
                 end if
              end do
              deallocate(a)
