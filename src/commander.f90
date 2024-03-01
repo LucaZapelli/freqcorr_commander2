@@ -332,14 +332,16 @@ program commander
         if (.not. freq_corr_noise) then
            call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = fg_param_map)
         else
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                  & fg_param_map_in = fg_param_map)
         end if
         deallocate(fg_param_map)
      else
         if (.not. freq_corr_noise) then
            call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = fg_param_map)
         else
-           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = fg_param_map)
+           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn,&
+                  & fg_param_map_in = fg_param_map)
         end if
      end if
   end if
