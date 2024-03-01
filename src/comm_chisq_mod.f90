@@ -220,7 +220,8 @@ contains
              my_signal = my_signal + my_coeff(j,map_id) * fg_temp(:,:,j)
           else
              do band_iter = 1, numband
-                my_signals_fcn(band_iter,:,:) = my_signals_fcn(band_iter,:,:) + my_coeff(j,band_iter) * fg_temps_fcn(band_iter,:,:,j)
+                my_signals_fcn(band_iter,:,:) = my_signals_fcn(band_iter,:,:) &
+                        &+ my_coeff(j,band_iter) * fg_temps_fcn(band_iter,:,:,j)
              end do
           end if
        end do
@@ -959,7 +960,8 @@ contains
                & unit=bp(map_id)%unit, nu_ref=bp(map_id)%nu_c)
        else
           call write_map(trim(chain_dir)//'/gainres_c'//chain_text//'_b'//band//'_k'//&
-               & iter_text // '.fits', residuals_fcn_local(map_id,:,:), comptype='Residual', unit=bp(map_id)%unit, nu_ref=bp(map_id)%nu_c)
+               & iter_text // '.fits', residuals_fcn_local(map_id,:,:), comptype='Residual',&
+               & unit=bp(map_id)%unit, nu_ref=bp(map_id)%nu_c)
           call write_map(trim(chain_dir)//'/gainsig_c'//chain_text//'_b'//band//'_k'//&
                & iter_text // '.fits', my_signals_fcn(map_id,:,:), comptype='Signal model', &
                & unit=bp(map_id)%unit, nu_ref=bp(map_id)%nu_c)
