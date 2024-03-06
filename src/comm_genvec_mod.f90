@@ -256,7 +256,7 @@ contains
     implicit none
 
     type(genvec),                        intent(in) :: a
-    real(dp),     allocatable, dimension(:)         :: b
+    real(dp),     allocatable, dimension(:)         :: b, c
 
     integer(i4b) :: n, m
 
@@ -270,18 +270,24 @@ contains
 
     n = 1
     m = size(a%cmb_amp)
-    b(n:n+m-1) = reshape(a%cmb_amp, shape(b))
+    allocate(c(m))
+    b(n:n+m-1) = reshape(a%cmb_amp, shape(c))
+    deallocate(c(m))
     n = n + m
 
     if (num_fg_temp > 0) then
        m = num_fg_temp
-       b(n:n+m-1) = reshape(a%temp_amp, shape(b))
+       allocate(c(m))
+       b(n:n+m-1) = reshape(a%temp_amp, shape(c))
+       deallocate(c(m))
        n = n + m
     end if
 
     if (sample_fg_pix) then
        m = size(a%fg_amp)
-       b(n:n+m-1) = reshape(a%fg_amp, shape(b))
+       allocate(c(m))
+       b(n:n+m-1) = reshape(a%fg_amp, shape(c))
+       deallocate(c(m))
        n = n + m
     end if
 
