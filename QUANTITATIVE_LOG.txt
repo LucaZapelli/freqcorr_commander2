@@ -407,9 +407,9 @@ M>  call initialize_bp_mod(myid, chain, comm_chain, paramfile, rng_handle, freq_
           *>          do band_iter = 1, numband
           *>             call int2string(band_iter, map2_text)
           *>             
-          *>             paramtext = 'NOISE_RMS' // map_text // map2_text
+          *>             paramtext = 'NOISE_RMS' // map2_text
           *>             call get_parameter(paramfile, trim(paramtext), par_string=rmsfile)
-          *>             paramtext = 'REG_NOISE_SCALE' // map_text // map2_text
+          *>             paramtext = 'REG_NOISE_SCALE' // map2_text
           *>             call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_scale)
           *>             paramtext = 'REGULARIZATION_NOISE'
           *>             call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_noise)
@@ -948,10 +948,16 @@ comm_mp_mod.f90:   M>   subroutine output_ml_map(paramfile, main_band_id)
                    A>     integer(i4b),     intent(in), optional :: main_band_id
                    .>     ...
                    M>     call output_ml_map_engine(myid_chain, paramfile, main_band_id)
-comm_data_mod.f90: M>       subroutine output_ml_map_engine(myid_chain, paramfile, main_band_id)
-                   A>         integer(i4b),     intent(in), optional :: main_band_id
-                   M>         integer(i4b) :: i, j, k, l, n, i2, j2, k2, p1, p2, ierr, unit, ntot, band_iter
+comm_data_mod.f90: M>       subroutine output_ml_map_engine(myid_chain, paramfile, main_band_id_)
+                   A>         integer(i4b),     intent(in), optional :: main_band_id_
+                   M>         integer(i4b) :: i, j, k, l, n, i2, j2, k2, p1, p2, ierr, unit, ntot, band_iter, main_band_id
                    A>         real(dp), allocatable, dimension(:,:)   :: invN_d_fcn
+                   .>         ...
+                   A>         if (present(main_band_id_)) then
+                   A>            main_band_id = main_band_id_
+                   A>         else
+                   A>            main_band_id = map_id
+                   A>         end if
                    .>         ...
                 **** ADDED PROCEDURE ****
                    *>         ! Set up linear system
