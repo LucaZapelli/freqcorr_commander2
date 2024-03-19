@@ -485,6 +485,26 @@ M>     call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_
 A>  else
 A>     call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, fg_param_map_in = fg_param_map)
 A>  end if  
+
+ALSO IN comm_mp_mod.f90: subroutine slave_carry_out_operation(slave_work)
+                     .>     ...
+                     .>     else if (operation == 12) then
+                     A>        if (.not. freq_corr_noise) then
+                     M>           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response)
+                     A>        else
+                     A>           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, &
+                     A>                   & fg_pix_spec_responses_fcn)
+                     A>        end if
+
+                          subroutine update_fg_pix_response_maps(index_map)
+                     .>      ...
+                     A>        if (.not. freq_corr_noise) then
+                     M>           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map))
+                     A>        else
+                     A>           call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, &
+                     A>                   & fg_param_map_in = index_map)
+                     A>        end if
+
     >> "comm_fg_component_mod.f90" IMPORTS FROM "comm_bp_mod.f90"
           .>  subroutine update_fg_pix_response_map(...)
           A>    real(dp),     dimension(1:,0:,1:,1:), intent(out)          :: fg_pix_spec_responses_fcn
