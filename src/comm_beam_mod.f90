@@ -88,18 +88,17 @@ contains
        
           beams_fcn(band_iter,:,:) = beam
        end do 
-       deallocate(beam)
     end if
-
-    deallocate(pixwin)
-    
 
     ! Read low-resolution beam transfer function
     allocate(beam_lowres(0:lmax_lowres, nmaps))
-    call gaussbeam(fwhm_lowres, lmax_lowres, beam_lowres)       
+    !call gaussbeam(fwhm_lowres, lmax_lowres, beam_lowres) ! Setting lowres from low-ls
+    if (lmax_lowres <= lmax) then
+       beam_lowres = beam(0:lmax_lowres, 1:nmaps)
+    end if
     
     ! Merge pixel and beam windows into one quantity
-    call read_pixwin(nside, nmaps, pixwin)
+    !call read_pixwin(nside, nmaps, pixwin)
     beam_lowres = beam_lowres * pixwin(0:lmax_lowres,1:nmaps)
     deallocate(pixwin)
     
