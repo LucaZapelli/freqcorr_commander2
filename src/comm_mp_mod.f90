@@ -108,7 +108,12 @@ contains
     else if (operation == 12) then
 
        ! Sample spectral index map
-       call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response)
+       if (.not. freq_corr_noise) then
+          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response)
+       else
+          call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, &
+                  & fg_pix_spec_responses_fcn)
+       end if
 
     else if (operation == 13) then
 
@@ -287,7 +292,12 @@ contains
     real(dp), dimension(0:,1:,1:), intent(in) :: index_map
 
     call mpi_bcast(12, 1, MPI_INTEGER, root, comm_chain, ierr)
-    call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
+    if (.not. freq_corr_noise) then
+       call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_param_map_in = index_map)
+    else
+       call update_fg_pix_response_map(map_id, pixels, fg_pix_spec_response, fg_pix_spec_responses_fcn, &
+               & fg_param_map_in = index_map)
+    end if
     
   end subroutine update_fg_pix_response_maps
 
