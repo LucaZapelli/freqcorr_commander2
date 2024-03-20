@@ -1,5 +1,5 @@
 # commander2.5
-Generelization of Commander2 code for frequency-correlated noise:
+Generalization of Commander2 code for frequency-correlated noise:
 
  1. Each processor handles a single main band, although importing every noise covariance and computing residual/signal maps for all bands when a N^-1 d operation has to be performed. Other quantities are expanded to every band, such as beams, foreground spectral responses and templates.
 2. Ft N^-1 F computation is simplified, solving for vector-scalar products rather then matrix-vector ones.
