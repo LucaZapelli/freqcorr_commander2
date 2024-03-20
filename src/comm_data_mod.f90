@@ -438,9 +438,9 @@ contains
              do band_iter = 1, numband
                 call int2string(band_iter, map2_text)
                 
-                paramtext = 'NOISE_RMS' // map_text // map2_text
+                paramtext = 'NOISE_RMS' // map2_text
                 call get_parameter(paramfile, trim(paramtext), par_string=rmsfile)
-                paramtext = 'REG_NOISE_SCALE' // map_text // map2_text
+                paramtext = 'REG_NOISE_SCALE' // map2_text
                 call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_scale)
                 paramtext = 'REGULARIZATION_NOISE'
                 call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_noise)
@@ -1326,20 +1326,26 @@ contains
   end subroutine enforce_zero_cmb_md
 
   ! Solve (F^t invN F)^1 F^t invN d, and compute (F^t invN F)^1 
-  subroutine output_ml_map_engine(myid_chain, paramfile, main_band_id)    
+  subroutine output_ml_map_engine(myid_chain, paramfile, main_band_id_)    
     implicit none
 
     integer(i4b),     intent(in)           :: myid_chain
     character(len=*), intent(in), optional :: paramfile
-    integer(i4b),     intent(in), optional :: main_band_id
+    integer(i4b),     intent(in), optional :: main_band_id_
 
-    integer(i4b) :: i, j, k, l, n, i2, j2, k2, p1, p2, ierr, unit, ntot, band_iter
+    integer(i4b) :: i, j, k, l, n, i2, j2, k2, p1, p2, ierr, unit, ntot, band_iter, main_band_id
     integer(i4b), allocatable, dimension(:) :: numval
     character(len=512) :: chain_dir
     real(dp)     :: scale
     real(dp), allocatable, dimension(:)   :: Ft_invN_d, buffer1, x
     real(dp), allocatable, dimension(:,:) :: invN_d_fcn
     real(dp), allocatable, dimension(:,:) :: F, Ft_invN_F, buffer2, map, cov, rms
+
+    if (present(main_band_id_)) then
+       main_band_id = main_band_id_
+    else
+       main_band_id = map_id
+    end if
 
     if (myid_chain == root) call get_parameter(paramfile, 'CHAIN_DIRECTORY',    par_string=chain_dir)
 
