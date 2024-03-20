@@ -26,7 +26,7 @@ module comm_N_mult_mod
   type(planck_rng),                          private :: rng_handle
 
   character(len=128)                                     :: noise_format
-  character(len=128),                            private :: paramfile
+  character(len=128),                            private :: paramfile, maskfile
   real(dp),     allocatable, dimension(:,:,:)            :: invN_rms, sqrt_invN_rms
   real(dp),     allocatable, dimension(:,:),     private :: invN_dense, sqrt_invN_dense
   real(dp),     allocatable, dimension(:,:,:),   private :: invN_pixblock, sqrt_invN_pixblock
@@ -34,7 +34,7 @@ module comm_N_mult_mod
   integer(i4b), allocatable, dimension(:),       private :: mask2map
   real(dp),     allocatable, dimension(:)                :: noiseamp
 
-  logical(lgt), private :: freq_corr_noise
+  logical(lgt), private :: freq_corr_noise, sample_inside_mask
 
 
   interface multiply_by_inv_N
@@ -55,10 +55,10 @@ contains
     character(len=128),          intent(in) :: paramfile_
 
     integer(i4b)       :: i, j, k, l, m, n, ind, ierr, map, pix, unit
-    logical(lgt)       :: polarization, sample_inside_mask
+    logical(lgt)       :: polarization !, sample_inside_mask
     real(dp)           :: reg_noise, reg_scale
     character(len=2)   :: map_text, map2_text, i_text
-    character(len=128) :: noisefile, maskfile, paramtext
+    character(len=128) :: noisefile, paramtext !, maskfile
     real(dp),     allocatable, dimension(:,:) :: noisemap, map_in
     real(dp),     allocatable, dimension(:,:) :: mask
 
@@ -76,9 +76,6 @@ contains
     paramfile = paramfile_
     map_id = map_id_in
     call int2string(map_id, map_text)
-    if (freq_corr_noise) then
-       call int2string(map_id, map2_text)
-    end if
 
     call get_parameter(paramfile, 'MASKFILE',                  par_string=maskfile)
     call get_parameter(paramfile, 'NOISE_FORMAT',              par_string=noise_format)       
@@ -90,6 +87,11 @@ contains
     call get_parameter(paramfile, 'SAMPLE_INSIDE_MASK',        par_lgt=sample_inside_mask)       
     call get_parameter(paramfile, 'NUMBAND',                   par_int=numband) 
     call get_parameter(paramfile, 'FREQ_CORR_NOISE',           par_lgt=freq_corr_noise)
+
+    if (freq_corr_noise) then
+       call int2string(map_id, map2_text)
+    end if
+    
     reg_noise = reg_noise * reg_scale
     npix    = 12*nside**2
     numcomp = (lmax+1)**2
@@ -175,7 +177,7 @@ contains
        if (myid_alms == numprocs-1) col_to = numpix
 
        if (freq_corr_noise) then
-          paramtext = 'INV_N_MAT' // map_text // map2_text
+          paramtext = 'INV_N_MAT' // trim(map_text) // trim(map2_text)
        else
           paramtext = 'INV_N_MAT' // map_text
        end if
@@ -202,7 +204,7 @@ contains
        close(unit)
 
        if (freq_corr_noise) then
-          paramtext = 'SQRT_INV_N_MAT' // map_text // map2_text
+          paramtext = 'SQRT_INV_N_MAT' // trim(map_text) // trim(map2_text)
        else
           paramtext = 'SQRT_INV_N_MAT' // map_text
        end if
@@ -237,19 +239,17 @@ contains
     integer(i4b), intent(in), optional :: band_id_in2
 
     integer(i4b)       :: i, j
-    logical(lgt)       :: sample_inside_mask
+    !logical(lgt)       :: sample_inside_mask
     real(dp)           :: reg_noise, reg_scale
     character(len=2)   :: map_text, map2_text
-    character(len=128) :: noisefile, maskfile, paramtext
+    character(len=128) :: noisefile, paramtext !, maskfile
     real(dp),     allocatable, dimension(:,:) :: noisemap, mask
     
     call int2string(band_id_in, map_text)
-    if (freq_corr_noise) then
-       if (present(band_id_in2)) then
-          call int2string(band_id_in2, map2_text)
-       else
-          call int2string(band_id_in, map2_text)
-       end if
+    if (present(band_id_in2)) then
+       call int2string(band_id_in2, map2_text)
+    else
+       call int2string(band_id_in, map2_text)
     end if
 
     call get_parameter(paramfile, 'REGULARIZATION_NOISE',      par_dp=reg_noise) 
@@ -261,11 +261,7 @@ contains
     allocate(mask(0:npix-1,nmaps))
     call read_map(maskfile, mask)
     
-    if (freq_corr_noise) then
-       paramtext = 'NOISE_RMS' // map_text // map2_text
-    else
-       paramtext = 'NOISE_RMS' // map_text
-    end if
+    paramtext = 'NOISE_RMS' // map2_text
     call get_parameter(paramfile, trim(paramtext), par_string=noisefile)
     
     allocate(noisemap(0:npix-1,nmaps))
@@ -305,18 +301,16 @@ contains
     unit = getlun()
        
     call int2string(band_id_in, map_text)
-    if (freq_corr_noise) then
-       if (present(band_id_in2)) then
-          call int2string(band_id_in2, map2_text)
-       else
-          call int2string(band_id_in, map2_text)
-       end if
+    if (present(band_id_in2)) then
+       call int2string(band_id_in2, map2_text)
+    else
+       call int2string(band_id_in, map2_text)
     end if
 
     map_id_fcn = band_id_in2
 
     if (freq_corr_noise) then
-       paramtext = 'INV_N_MAT' // map_text // map2_text
+       paramtext = 'INV_N_MAT' // trim(map_text) // trim(map2_text)
     else
        paramtext = 'INV_N_MAT' // map_text
     end if
@@ -332,7 +326,7 @@ contains
        
     read(unit) i ! Ordering
     read(unit) i ! Polarization status
-    write(*,fmt='(a,i8,i8)') 'Size of inverse noise covariance matrix         = ', n, col_to-col_from+1
+    !write(*,fmt='(a,i8,i8)') 'Size of inverse noise covariance matrix         = ', n, col_to-col_from+1
     do i = 1, col_from-1
        read(unit) 
     end do
@@ -343,7 +337,7 @@ contains
     close(unit)
 
     if (freq_corr_noise) then
-       paramtext = 'SQRT_INV_N_MAT' // map_text // map2_text
+       paramtext = 'SQRT_INV_N_MAT' // trim(map_text) // trim(map2_text)
     else
        paramtext = 'SQRT_INV_N_MAT' // map_text
     end if
@@ -353,7 +347,7 @@ contains
     read(unit) n
     read(unit) i ! Ordering
     read(unit) i ! Polarization status
-    write(*,fmt='(a,i8,i8)') 'Size of sqrt of inverse noise covariance matrix = ', n, col_to-col_from+1
+    !write(*,fmt='(a,i8,i8)') 'Size of sqrt of inverse noise covariance matrix = ', n, col_to-col_from+1
     do i = 1, col_from-1
        read(unit) 
     end do
