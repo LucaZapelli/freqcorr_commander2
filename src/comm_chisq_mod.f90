@@ -299,11 +299,7 @@ contains
        do band_iter = 1, numband
           invN_residual1_dummy_fcn = 0.d0
           invN_residual2_dummy_fcn = 0.d0
-          if (trim(noise_format) == 'rms') then
-             call initialize_invN_rms_fcn(band_iter)
-          else if (trim(noise_format) == 'dense_matrix') then
-             call initialize_invN_dense_fcn(map_id, band_iter) 
-          end if
+          call initialize_invN_dense_fcn(map_id, band_iter) 
           call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual1_dummy_fcn)
           if (sample_inside_mask) then
              mask_state = INSIDE_MASK
@@ -474,21 +470,13 @@ contains
        else
           invN_residual1 = 0.d0
           invN_residual2 = 0.d0
-          do band_iter = 1, numband
-             invN_residual1_dummy_fcn = 0.d0
-             invN_residual2_dummy_fcn = 0.d0
-             call initialize_invN_rms_fcn(band_iter)
-             call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual1_dummy_fcn, N_format='rms')
-             invN_residual1 = invN_residual1 + invN_residual1_dummy_fcn
-          end do 
+          call initialize_invN_rms_fcn(map_id)
+          call multiply_by_inv_N(residuals_fcn_local(map_id,:,:), invN_residual1, N_format='rms')
           my_chisq = sum(residuals_fcn_local(map_id,:,:)*invN_residual1 * procmask)
           if (sample_inside_mask) then
              mask_state = INSIDE_MASK
-             do band_iter = 1, numband
-                call initialize_invN_rms_fcn(band_iter)
-                call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual2_dummy_fcn, N_format='rms')
-                invN_residual2 = invN_residual2 + invN_residual2_dummy_fcn
-             end do
+             call initialize_invN_rms_fcn(map_id)
+             call multiply_by_inv_N(residuals_fcn_local(map_id,:,:), invN_residual2, N_format='rms')
              mask_state = OUTSIDE_MASK
              my_chisq = my_chisq + sum(residuals_fcn_local(map_id,:,:)*invN_residual2 * procmask)
           end if
@@ -537,6 +525,7 @@ contains
     real(dp),     allocatable, dimension(:)     :: my_gain, buffer, cl1, cl2, slope
     real(dp),     allocatable, dimension(:,:,:) :: fg_amp, ind_map
     real(dp),     allocatable, dimension(:,:)   :: alms_work, my_signal, my_coeff, map, weights
+    real(dp),     allocatable, dimension(:,:)   :: signal_dummy_fcn
     real(dp),     allocatable, dimension(:,:,:) :: my_signals_fcn
     real(dp),     allocatable, dimension(:,:)   :: my_chisq_map, chisq_map_tot
     real(dp),     allocatable, dimension(:,:)   :: residual, invN_signal
@@ -556,6 +545,7 @@ contains
        allocate(residual(0:map_size-1,nmaps))
     else
        allocate(my_signals_fcn(numband,0:map_size-1,nmaps))
+       allocate(signal_dummy_fcn(0:map_size-1,nmaps))
        allocate(residuals_fcn_local(numband,0:map_size-1,nmaps))
     end if
 
@@ -875,11 +865,13 @@ contains
           my_mu    = sum(residual  * invN_signal)
        else
           do band_iter = 1, numband
-             call initialize_invN_rms_fcn(band_iter)
+             signal_dummy_fcn = 0.d0
+             call initialize_invN_dense_fcn(map_id,band_iter)
+             call multiply_by_inv_N(my_signals_fcn(band_iter,:,:), signal_dummy_fcn)
              do j = 1, nmaps
                 do i = 0, map_size-1
                    if (mask_calibs_fcn(band_iter,i,j) > 0.5d0) then
-                      invN_signal(i,j) = invN_signal(i,j) + my_signals_fcn(band_iter,i,j) * sum(invN_rms(i,j,:))
+                      invN_signal(i,j) = invN_signal(i,j) + signal_dummy_fcn(i,j)
                    end if
                 end do
              end do
