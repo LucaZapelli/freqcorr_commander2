@@ -233,35 +233,29 @@ contains
   end subroutine initialize_N_mult_mod
 
 
-  subroutine initialize_invN_rms_fcn(band_id_in, band_id_in2)
+  subroutine initialize_invN_rms_fcn(band_id_in)
     implicit none
     integer(i4b), intent(in)           :: band_id_in
-    integer(i4b), intent(in), optional :: band_id_in2
 
     integer(i4b)       :: i, j
     !logical(lgt)       :: sample_inside_mask
     real(dp)           :: reg_noise, reg_scale
-    character(len=2)   :: map_text, map2_text
+    character(len=2)   :: map_text
     character(len=128) :: noisefile, paramtext !, maskfile
     real(dp),     allocatable, dimension(:,:) :: noisemap, mask
     
     call int2string(band_id_in, map_text)
-    if (present(band_id_in2)) then
-       call int2string(band_id_in2, map2_text)
-    else
-       call int2string(band_id_in, map2_text)
-    end if
 
     call get_parameter(paramfile, 'REGULARIZATION_NOISE',      par_dp=reg_noise) 
     call get_parameter(paramfile, 'REG_NOISE_SCALE'//map_text, par_dp=reg_scale)
     reg_noise = reg_noise * reg_scale
 
-    map_id_fcn = band_id_in2
+    map_id_fcn = band_id_in
     
     allocate(mask(0:npix-1,nmaps))
     call read_map(maskfile, mask)
     
-    paramtext = 'NOISE_RMS' // map2_text
+    paramtext = 'NOISE_RMS' // map_text
     call get_parameter(paramfile, trim(paramtext), par_string=noisefile)
     
     allocate(noisemap(0:npix-1,nmaps))
