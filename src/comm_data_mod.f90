@@ -1384,7 +1384,7 @@ contains
        do band_iter = 1, numband                                        
           map = residuals_fcn(band_iter,:,:) 
           if (trim(noise_format) == 'rms') then
-             call initialize_invN_rms_fcn(main_band_id, band_iter)
+             call initialize_invN_rms_fcn(band_iter)
           else if (trim(noise_format) == 'dense_matrix') then
              call initialize_invN_dense_fcn(main_band_id, band_iter) 
           end if
@@ -1444,7 +1444,7 @@ contains
                       map = 0.d0                                                     
                       map(p1,k) = fg_pix_spec_responses_fcn(band_iter,p1,k,j)        
                       if (trim(noise_format) == 'rms') then
-                         call initialize_invN_rms_fcn(main_band_id, band_iter)
+                         call initialize_invN_rms_fcn(band_iter)
                       else if (trim(noise_format) == 'dense_matrix') then
                          call initialize_invN_dense_fcn(main_band_id, band_iter) 
                       end if
