@@ -288,26 +288,23 @@ contains
           if (fg_components(k)%enforce_positive_amplitude) cycle
           do l = 1, num_fg_signal
              if (fg_components(l)%enforce_positive_amplitude) cycle
-             do i = 0, map_size-1
-                if (.not. freq_corr_noise) then
+             if (freq_corr_noise) then
+                do i = 0, map_size-1
+                   call get_inv_N_sub_matrix(map_id, mask_state, i, inv_N)
+                   do j = 1, nmaps
+                      my_M_fg_pix(k,l,pixels(i),j) = fg_pix_spec_responses_fcn(map_id,i,j,k) * &
+                           & inv_N(j) * fg_pix_spec_responses_fcn(map_id,i,j,l)
+                   end do
+                end do
+             else
+                do i = 0, map_size-1
                    call get_inv_N_sub_matrix(map_id, mask_state, i, inv_N)
                    do j = 1, nmaps
                       my_M_fg_pix(k,l,pixels(i),j) = fg_pix_spec_response(i,j,k) * &
                            & inv_N(j) * fg_pix_spec_response(i,j,l)
                    end do
-                else
-                   do band_iter = 1, numband
-                      call initialize_invN_rms_fcn(map_id, band_iter)
-                      call get_inv_N_sub_matrix(band_iter, mask_state, i, inv_N)
-                      do j = 1, nmaps
-                         my_M_fg_pix(k,l,pixels(i),j) = my_M_fg_pix(k,l,pixels(i),j) + &
-                              & fg_pix_spec_responses_fcn(map_id,i,j,k) * &
-                              & inv_N(j) * fg_pix_spec_responses_fcn(band_iter,i,j,l)
-                      end do 
-                   end do
-                end if
-             end do
-                
+                end do
+             end if
           end do
        end do
        deallocate(inv_N)
