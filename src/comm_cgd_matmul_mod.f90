@@ -111,7 +111,7 @@ contains
           map_sum = 0.d0
           do band_iter = 1, numband
              if (trim(noise_format) == 'rms') then
-                call initialize_invN_rms_fcn(map_id, band_iter)
+                call initialize_invN_rms_fcn(band_iter)
              else if (trim(noise_format) == 'dense_matrix') then
                 call initialize_invN_dense_fcn(map_id, band_iter) 
              end if
@@ -141,7 +141,7 @@ contains
                 end do
              end do
              if (trim(noise_format) == 'rms') then
-                call initialize_invN_rms_fcn(map_id, band_iter)
+                call initialize_invN_rms_fcn(band_iter)
              else if (trim(noise_format) == 'dense_matrix') then
                 call initialize_invN_dense_fcn(map_id, band_iter) 
              end if
@@ -351,7 +351,7 @@ contains
     else
        do band_iter = 1, numband
           if (trim(noise_format) == 'rms') then
-             call initialize_invN_rms_fcn(map_id, band_iter)
+             call initialize_invN_rms_fcn(band_iter)
           else if (trim(noise_format) == 'dense_matrix') then
              call initialize_invN_dense_fcn(map_id, band_iter) 
           end if
