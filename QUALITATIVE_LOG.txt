@@ -32,8 +32,7 @@
 >> comm_cgd_precond_mod.f90:
         >> NEW GLOBAL VARIABLES:
         >> NEW SUBROUTINES
-        >> MODDED SUBROUTINES:   - initialize_preconditioner: * Generalizing 'M = fg N^-1 fg' as
-                                                                             'M = SUM_i [fg N(i)^-1 fg(i)]'
+        >> MODDED SUBROUTINES:   - initialize_preconditioner: * The preconditioning is left with the main band's invN_rms
 
 >> comm_chisq_mod.f90:
         >> NEW GLOBAL VARIABLES:
@@ -139,7 +138,6 @@
         >> NEW GLOBAL VARIABLES: - int numband
                                  - lgt freq_corr_noise
         >> NEW SUBROUTINES:      - initialize_invN_rms_fcn: TAKES >> band_id_in = main band index
-                                                                  >> band_id_in2 = secondary band index
                                                             DOES * Initializes reg_noise, invN_rms and sqrt_invN_rms
                                  - initialize_invN_dense_fcn: TAKES >> band_id_in = main band index
                                                                     >> band_id_in2 = secondary band index
