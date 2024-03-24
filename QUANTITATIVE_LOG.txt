@@ -144,34 +144,28 @@ M>  call initialize_bp_mod(myid, chain, comm_chain, paramfile, rng_handle, freq_
           .>  end subroutine initialize_N_mult_mod
           .>  ...
        **** ADDED SUBROUTINE ****
-          *>  subroutine initialize_invN_rms_fcn(band_id_in, band_id_in2)
+          *>  subroutine initialize_invN_rms_fcn(band_id_in)
           *>    implicit none
           *>    integer(i4b), intent(in)           :: band_id_in
-          *>    integer(i4b), intent(in), optional :: band_id_in2
           *>    
           *>    integer(i4b)       :: i, j
           *>    real(dp)           :: reg_noise, reg_scale
-          *>    character(len=2)   :: map_text, map2_text
+          *>    character(len=2)   :: map_text
           *>    character(len=128) :: noisefile, paramtext
           *>    real(dp),     allocatable, dimension(:,:) :: noisemap, mask
           *>
           *>    call int2string(band_id_in, map_text)
-          *>    if (present(band_id_in2)) then
-          *>       call int2string(band_id_in2, map2_text)
-          *>    else
-          *>       call int2string(band_id_in, map2_text)
-          *>    end if
           *>
           *>    call get_parameter(paramfile, 'REGULARIZATION_NOISE',      par_dp=reg_noise) 
           *>    call get_parameter(paramfile, 'REG_NOISE_SCALE'//map_text, par_dp=reg_scale)
           *>    reg_noise = reg_noise * reg_scale
           *>
-          *>    map_id_fcn = band_id_in2
+          *>    map_id_fcn = band_id_in
           *>
           *>    allocate(mask(0:npix-1,nmaps))
           *>    call read_map(maskfile, mask)
           *>
-          *>    paramtext = 'NOISE_RMS' // map2_text
+          *>    paramtext = 'NOISE_RMS' // map_text
           *>    call get_parameter(paramfile, trim(paramtext), par_string=noisefile)
           *>
           *>    allocate(noisemap(0:npix-1,nmaps))
@@ -676,7 +670,7 @@ comm_cgd_matmul_mod.f90: *>                      if (mask_state == OUTSIDE_MASK 
                          *>                      else
                          *>                         do band_iter = 1, numband
                          *>                            if (trim(noise_format) == 'rms') then
-                         *>                               call initialize_invN_rms_fcn(map_id, band_iter)
+                         *>                               call initialize_invN_rms_fcn(band_iter)
                          *>                            else if (trim(noise_format) == 'dense_matrix') then
                          *>                               call initialize_invN_dense_fcn(map_id, band_iter) 
                          *>                            end if
@@ -1013,7 +1007,7 @@ comm_data_mod.f90: M>       subroutine output_ml_map_engine(myid_chain, paramfil
                    *>            do band_iter = 1, numband                                        
                    *>               map = residuals_fcn(band_iter,:,:) 
                    *>               if (trim(noise_format) == 'rms') then
-                   *>                  call initialize_invN_rms_fcn(main_band_id, band_iter)
+                   *>                  call initialize_invN_rms_fcn(band_iter)
                    *>               else if (trim(noise_format) == 'dense_matrix') then
                    *>                  call initialize_invN_dense_fcn(main_band_id, band_iter) 
                    *>               end if
@@ -1073,7 +1067,7 @@ comm_data_mod.f90: M>       subroutine output_ml_map_engine(myid_chain, paramfil
                    *>                           map = 0.d0                                                     
                    *>                           map(p1,k) = fg_pix_spec_responses_fcn(band_iter,p1,k,j)        
                    *>                           if (trim(noise_format) == 'rms') then
-                   *>                              call initialize_invN_rms_fcn(main_band_id, band_iter)
+                   *>                              call initialize_invN_rms_fcn(band_iter)
                    *>                           else if (trim(noise_format) == 'dense_matrix') then
                    *>                              call initialize_invN_dense_fcn(main_band_id, band_iter) 
                    *>                           end if
@@ -1505,7 +1499,7 @@ comm_cgd_matmul_mod.f90: .>           subroutine compute_signal_rhs(add_wf_in, a
                          *>                   map_sum = 0.d0
                          *>                   do band_iter = 1, numband
                          *>                      if (trim(noise_format) == 'rms') then
-                         *>                         call initialize_invN_rms_fcn(map_id, band_iter)
+                         *>                         call initialize_invN_rms_fcn(band_iter)
                          *>                      else if (trim(noise_format) == 'dense_matrix') then
                          *>                         call initialize_invN_dense_fcn(map_id, band_iter) 
                          *>                      end if
@@ -1536,7 +1530,7 @@ comm_cgd_matmul_mod.f90: .>           subroutine compute_signal_rhs(add_wf_in, a
                          *>                         end do
                          *>                      end do
                          *>                      if (trim(noise_format) == 'rms') then
-                         *>                         call initialize_invN_rms_fcn(map_id, band_iter)
+                         *>                         call initialize_invN_rms_fcn(band_iter)
                          *>                      else if (trim(noise_format) == 'dense_matrix') then
                          *>                         call initialize_invN_dense_fcn(map_id, band_iter) 
                          *>                      end if
@@ -1600,31 +1594,29 @@ comm_cgd_precond_mod.f90:.>                  subroutine initialize_preconditione
                          *>                       allocate(M_fg_pix_sum(num_fg_signal, num_fg_signal, 0:npix-1, nmaps)) 
                          *>                       allocate(inv_N(nmaps))
                          *>                       
+                         *>                       if (freq_corr_noise) call initialize_invN_rms_fcn(map_id)
                          *>                       my_M_fg_pix = 0.d0
                          *>                       do k = 1, num_fg_signal
                          *>                          if (fg_components(k)%enforce_positive_amplitude) cycle
                          *>                          do l = 1, num_fg_signal
                          *>                             if (fg_components(l)%enforce_positive_amplitude) cycle
-                         *>                             do i = 0, map_size-1
-                         *>                                if (.not. freq_corr_noise) then
-                         *>                                   call get_inv_N_sub_matrix(map_id, mask_state, i, inv_N)  !!!
+                         *>                             if (freq_corr_noise) then
+                         *>                                do i = 0, map_size-1
+                         *>                                   call get_inv_N_sub_matrix(map_id, mask_state, i, inv_N)
+                         *>                                   do j = 1, nmaps
+                         *>                                      my_M_fg_pix(k,l,pixels(i),j) = fg_pix_spec_responses_fcn(map_id,i,j,k) * &
+                         *>                                           & inv_N(j) * fg_pix_spec_responses_fcn(map_id,i,j,l)
+                         *>                                   end do
+                         *>                                end do
+                         *>                             else
+                         *>                                do i = 0, map_size-1
+                         *>                                   call get_inv_N_sub_matrix(map_id, mask_state, i, inv_N)
                          *>                                   do j = 1, nmaps
                          *>                                      my_M_fg_pix(k,l,pixels(i),j) = fg_pix_spec_response(i,j,k) * &
                          *>                                           & inv_N(j) * fg_pix_spec_response(i,j,l)
                          *>                                   end do
-                         *>                                else
-                         *>                                   do band_iter = 1, numband
-                         *>                                      call initialize_invN_rms_fcn(map_id, band_iter)
-                         *>                                      call get_inv_N_sub_matrix(band_iter, mask_state, i, inv_N)
-                         *>                                      do j = 1, nmaps
-                         *>                                         my_M_fg_pix(k,l,pixels(i),j) = my_M_fg_pix(k,l,pixels(i),j) + &
-                         *>                                              & fg_pix_spec_responses_fcn(map_id,i,j,k) * &
-                         *>                                              & inv_N(j) * fg_pix_spec_responses_fcn(band_iter,i,j,l)
-                         *>                                      end do 
-                         *>                                   end do
-                         *>                                end if
-                         *>                             end do
-                         *>                                
+                         *>                                end do
+                         *>                             end if
                          *>                          end do
                          *>                       end do
                          *>                       deallocate(inv_N)
@@ -1937,7 +1929,7 @@ comm_chisq_mod.f90: .>          subroutine compute_total_chisq(map_id, s, output
                     *>                  invN_residual1_dummy_fcn = 0.d0
                     *>                  invN_residual2_dummy_fcn = 0.d0
                     *>                  if (trim(noise_format) == 'rms') then
-                    *>                     call initialize_invN_rms_fcn(map_id, band_iter)
+                    *>                     call initialize_invN_rms_fcn(band_iter)
                     *>                  else if (trim(noise_format) == 'dense_matrix') then
                     *>                     call initialize_invN_dense_fcn(map_id, band_iter) 
                     *>                  end if
@@ -2018,7 +2010,7 @@ comm_chisq_mod.f90: .>          subroutine compute_total_chisq(map_id, s, output
                     *>                  do band_iter = 1, numband
                     *>                     invN_residual1_dummy_fcn = 0.d0
                     *>                     invN_residual2_dummy_fcn = 0.d0
-                    *>                     call initialize_invN_rms_fcn(map_id, band_iter)
+                    *>                     call initialize_invN_rms_fcn(band_iter)
                     *>                     call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual1_dummy_fcn, N_format='rms')
                     *>                     invN_residual1 = invN_residual1 + invN_residual1_dummy_fcn
                     *>                  end do 
@@ -2026,7 +2018,7 @@ comm_chisq_mod.f90: .>          subroutine compute_total_chisq(map_id, s, output
                     *>                  if (sample_inside_mask) then
                     *>                     mask_state = INSIDE_MASK
                     *>                     do band_iter = 1, numband
-                    *>                        call initialize_invN_rms_fcn(map_id, band_iter)
+                    *>                        call initialize_invN_rms_fcn(band_iter)
                     *>                        call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual2_dummy_fcn, N_format='rms')
                     *>                        invN_residual2 = invN_residual2 + invN_residual2_dummy_fcn
                     *>                     end do
@@ -2349,7 +2341,7 @@ comm_chisq_mod.f90: .>  subroutine sample_gain(handle, map_id, s, chain, iter)
                     *>          my_mu    = sum(residual  * invN_signal)
                     *>       else
                     *>          do band_iter = 1, numband
-                    *>             call initialize_invN_rms_fcn(map_id, band_iter)
+                    *>             call initialize_invN_rms_fcn(band_iter)
                     *>             do j = 1, nmaps
                     *>                do i = 0, map_size-1
                     *>                   if (mask_calibs_fcn(band_iter,i,j) > 0.5d0) then
@@ -2997,8 +2989,7 @@ QUESTIONS:
 >> comm_cgd_precond_mod.f90:
         >> NEW GLOBAL VARIABLES:
         >> NEW SUBROUTINES
-        >> MODDED SUBROUTINES:   - initialize_preconditioner: * Generalizing 'M = fg N^-1 fg' as
-                                                                             'M = SUM_i [fg N(i)^-1 fg(i)]'
+        >> MODDED SUBROUTINES:   - initialize_preconditioner: * Preconditioning is left with main band's invN_rms
 
 >> comm_chisq_mod.f90:
         >> NEW GLOBAL VARIABLES:
@@ -3104,7 +3095,6 @@ QUESTIONS:
         >> NEW GLOBAL VARIABLES: - int numband
                                  - lgt freq_corr_noise
         >> NEW SUBROUTINES:      - initialize_invN_rms_fcn: TAKES >> band_id_in = main band index
-                                                                  >> band_id_in2 = secondary band index
                                                             DOES * Initializes reg_noise, invN_rms and sqrt_invN_rms
                                  - initialize_invN_dense_fcn: TAKES >> band_id_in = main band index
                                                                     >> band_id_in2 = secondary band index
