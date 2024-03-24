@@ -110,11 +110,7 @@ contains
        else
           map_sum = 0.d0
           do band_iter = 1, numband
-             if (trim(noise_format) == 'rms') then
-                call initialize_invN_rms_fcn(band_iter)
-             else if (trim(noise_format) == 'dense_matrix') then
-                call initialize_invN_dense_fcn(map_id, band_iter) 
-             end if
+             call initialize_invN_dense_fcn(map_id, band_iter) 
              call multiply_by_inv_N(residuals_fcn(band_iter,:,:), map_sum_dummy_fcn)
              map_sum = map_sum + map_sum_dummy_fcn
           end do
@@ -140,11 +136,7 @@ contains
                    eta(j,i)  = rand_gauss(rng_handle)
                 end do
              end do
-             if (trim(noise_format) == 'rms') then
-                call initialize_invN_rms_fcn(band_iter)
-             else if (trim(noise_format) == 'dense_matrix') then
-                call initialize_invN_dense_fcn(map_id, band_iter) 
-             end if
+             call initialize_invN_dense_fcn(map_id, band_iter) 
              call multiply_by_sqrt_inv_N(eta)  
              map_sum = map_sum + eta
           end do
@@ -350,11 +342,7 @@ contains
        call multiply_by_inv_N(map_sum)
     else
        do band_iter = 1, numband
-          if (trim(noise_format) == 'rms') then
-             call initialize_invN_rms_fcn(band_iter)
-          else if (trim(noise_format) == 'dense_matrix') then
-             call initialize_invN_dense_fcn(map_id, band_iter) 
-          end if
+          call initialize_invN_dense_fcn(map_id, band_iter) 
           call multiply_by_inv_N(map_sums_fcn(band_iter,:,:))
           map_sum = map_sum + map_sums_fcn(band_iter,:,:)
        end do
