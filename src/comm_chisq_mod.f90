@@ -300,7 +300,7 @@ contains
           invN_residual1_dummy_fcn = 0.d0
           invN_residual2_dummy_fcn = 0.d0
           if (trim(noise_format) == 'rms') then
-             call initialize_invN_rms_fcn(map_id, band_iter)
+             call initialize_invN_rms_fcn(band_iter)
           else if (trim(noise_format) == 'dense_matrix') then
              call initialize_invN_dense_fcn(map_id, band_iter) 
           end if
@@ -477,7 +477,7 @@ contains
           do band_iter = 1, numband
              invN_residual1_dummy_fcn = 0.d0
              invN_residual2_dummy_fcn = 0.d0
-             call initialize_invN_rms_fcn(map_id, band_iter)
+             call initialize_invN_rms_fcn(band_iter)
              call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual1_dummy_fcn, N_format='rms')
              invN_residual1 = invN_residual1 + invN_residual1_dummy_fcn
           end do 
@@ -485,7 +485,7 @@ contains
           if (sample_inside_mask) then
              mask_state = INSIDE_MASK
              do band_iter = 1, numband
-                call initialize_invN_rms_fcn(map_id, band_iter)
+                call initialize_invN_rms_fcn(band_iter)
                 call multiply_by_inv_N(residuals_fcn_local(band_iter,:,:), invN_residual2_dummy_fcn, N_format='rms')
                 invN_residual2 = invN_residual2 + invN_residual2_dummy_fcn
              end do
@@ -875,7 +875,7 @@ contains
           my_mu    = sum(residual  * invN_signal)
        else
           do band_iter = 1, numband
-             call initialize_invN_rms_fcn(map_id, band_iter)
+             call initialize_invN_rms_fcn(band_iter)
              do j = 1, nmaps
                 do i = 0, map_size-1
                    if (mask_calibs_fcn(band_iter,i,j) > 0.5d0) then
