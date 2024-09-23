@@ -1,4 +1,4 @@
-# commander2.5
+# Freqcorr commander2 build
 Generalization of Commander2 code for frequency-correlated noise:
 
  1. Each processor handles a single main band, although importing every noise covariance and computing residual/signal maps for all bands when a N^-1 d operation has to be performed. Other quantities are expanded to every band, such as beams, foreground spectral responses and templates.
