@@ -1688,6 +1688,7 @@ contains
     integer(i4b) :: n_beta, n_T, i, j
     real(dp)     :: w, w_tot, betap, Tp, beta_min, beta_max, dbeta, T_min, T_max, dT, beta_rms, T_rms, f, S, x
     real(dp)     :: alpha, gamma, delta, nu_steep
+
 !!$    alpha = alpha_flat
 !!$    gamma  = gamma_flat
     x      = h / (k_B*T_d)
@@ -2240,7 +2241,6 @@ contains
 
     R%independent_pixels = .false.
     if (exist) then
-
        ! Read precomp file from disk
        open(unit, file=trim(precompfile), form='unformatted')
        read(unit) R%independent_pixels
@@ -2266,7 +2266,6 @@ contains
        !write(*,*) myid, myid_chain, R%nreg, R%nregset, sum(real(R%regions(1)%pix_ext,dp))
 
     else
-
        read(filename,*) name
        if (trim(name) == 'fullsky') then
           if (trim(type_text) == 'TQU') then

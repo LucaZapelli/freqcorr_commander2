@@ -51,7 +51,6 @@ contains
     integer(i4b) :: operation, comp, par
     real(dp)     :: rms
 
-
     call mpi_bcast(operation, 1, MPI_INTEGER, root, comm_chain, ierr)
 
     if (operation == 1) then
@@ -104,6 +103,7 @@ contains
 
        ! Initialize preconditioner
        call initialize_preconditioner
+
 
     else if (operation == 12) then
 
@@ -236,7 +236,7 @@ contains
     logical(lgt), intent(in)      :: subtract_signal
 
     call mpi_bcast(7, 1, MPI_INTEGER, root, comm_chain, ierr)
-    call compute_residual(s, subtract_signal)       
+    call compute_residual(s, subtract_signal)
 
   end subroutine compute_residuals
 

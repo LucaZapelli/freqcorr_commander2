@@ -320,8 +320,8 @@ contains
           if (.not. freq_corr_noise) then
              my_chisq_map(pixels(i),j) = invN_residual1(i,j)**2 + invN_residual2(i,j)**2
           else
-             my_chisq_map(pixels(i),1) = residuals_fcn_local(map_id,i,j)*invN_residual1(i,j) + &
-                  & residuals_fcn_local(map_id,i,j)*invN_residual2(i,j)
+             my_chisq_map(pixels(i),j) = residuals_fcn_local(map_id,i,j)*invN_residual1(i,j) + &
+                  & residuals_fcn_local(map_id,i,j)*invN_residual2(i,j)  !! MODDED: my_chisq_map(pixels(i),1) > my_chisq_map(pixels(i),j)
           end if
        end do
     end do
@@ -502,6 +502,279 @@ contains
     end if
 
   end subroutine compute_total_chisq
+
+
+  subroutine compute_total_chisq_nucorr(map_id, s, output_stats, index_map, chisq_map, chisq_highlat, chisq_fullsky, &
+       & chisq_rms, chisq_band, nu_band, chisq_band_fullsky, chain, iter)
+    implicit none
+
+    integer(i4b),                      intent(in)              :: map_id
+    integer(i4b),                      intent(in),    optional :: chain
+    logical(lgt),                      intent(in),    optional :: output_stats
+    type(genvec),                      intent(in),    optional :: s
+    real(dp),     dimension(0:,1:,1:), intent(in),    optional :: index_map
+    real(dp),                          intent(out),   optional :: chisq_fullsky, chisq_highlat, chisq_rms
+    real(dp),     dimension(0:,1:),    intent(out),   optional :: chisq_map
+    real(dp),     dimension(1:),       intent(out),   optional :: chisq_band, nu_band, chisq_band_fullsky
+    integer(i4b),                      intent(in),    optional :: iter
+
+
+    integer(i4b) :: i, j, k, l, m, p, ierr, c, testpix(4)
+    logical(lgt) :: output_chisq_rms, use_index_map, output_chisq_fullsky, output_chisq_band
+    logical(lgt) :: output_chisq_highlat, output_stats_, output_chisq, output_chisq_band_fullsky
+    real(dp)     :: my_chisq, chisq_tot, f, r, monopole
+    character(len=512) :: dir, filename
+    character(len=2)   :: band, chain_text
+    character(len=5)   :: iter_text
+    real(dp),     allocatable, dimension(:)     :: my_chisq_band, buffer
+    real(dp),     allocatable, dimension(:,:,:) :: fg_amp, ind_map
+    real(dp),     allocatable, dimension(:,:)   :: alms_work, my_signal, my_coeff, mask_output
+    real(dp),     allocatable, dimension(:,:)   :: my_chisq_map, chisq_map_tot, outmap
+    real(dp),     allocatable, dimension(:,:)   :: residual, invN_residual1, invN_residual2
+    integer(i4b), dimension(MPI_STATUS_SIZE)    :: status
+    type(fg_params) :: fg_par
+
+
+    if (myid_chain == root) then
+       output_stats_ = .false.; if (present(output_stats)) output_stats_ = output_stats
+       output_chisq_rms           = present(chisq_rms)
+       output_chisq_fullsky       = present(chisq_fullsky)
+       output_chisq_highlat       = present(chisq_highlat)
+       output_chisq_band          = present(chisq_band)
+       output_chisq_band_fullsky  = present(chisq_band_fullsky)
+       use_index_map              = present(index_map)
+    end if
+    call mpi_bcast(output_chisq_rms,          1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(output_chisq_fullsky,      1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(output_chisq_highlat,      1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(output_stats_,             1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(output_chisq_band,         1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(output_chisq_band_fullsky, 1, MPI_LOGICAL, root, comm_chain, ierr)
+    call mpi_bcast(use_index_map,             1, MPI_LOGICAL, root, comm_chain, ierr)
+
+
+    allocate(my_chisq_map(0:npix-1,nmaps))
+    allocate(chisq_map_tot(0:npix-1,nmaps))
+    allocate(invN_residual1(0:map_size-1,nmaps), invN_residual2(0:map_size-1,nmaps))
+
+    if (use_index_map) then
+       allocate(ind_map(0:npix-1,nmaps,num_fg_par))
+       if (myid_chain == root) ind_map = index_map
+       call mpi_bcast(ind_map, size(ind_map), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
+    end if
+
+    allocate(my_signal(0:map_size-1,nmaps))
+    allocate(residual(0:map_size-1,nmaps))
+
+
+    ! Compute the CMB part
+    my_signal = 0.d0
+    if (.not. enforce_zero_cl) then
+       if (myid_alms == root) then
+          allocate(alms_work(numcomp, nmaps))
+          if (myid_data == root) alms_work = s%cmb_amp
+          call mpi_bcast(alms_work, size(alms_work), MPI_DOUBLE_PRECISION, root, comm_data, ierr)
+          call multiply_with_beam(alms_work, band_id_in=map_id)
+          call convert_harmonic_to_real_space(my_signal, alms_work)
+          deallocate(alms_work)
+       else
+          call convert_harmonic_to_real_space(my_signal)
+       end if
+       my_signal = my_signal * spec2data(map_id, cmb=.true.)
+       where (.not. mask)
+          my_signal = 0.d0
+       end where
+    end if
+
+    ! Distribute foreground amplitudes
+    if (num_fg_temp > 0) then
+       allocate(my_coeff(num_fg_temp, numband))
+       if (myid_chain == root) my_coeff = s%temp_amp
+       call mpi_bcast(my_coeff, size(my_coeff), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
+       !write(*,fmt='(i5,5f16.3)') map_id, my_coeff(:,map_id)
+       do j = 1, num_fg_temp
+          my_signal = my_signal + my_coeff(j,map_id) * fg_temps_fcn(map_id,:,:,j)
+       end do
+       monopole = 0.d0; if (sample_T_modes) monopole = my_coeff(1,map_id)
+       deallocate(my_coeff)
+    end if
+
+    if (sample_fg_pix) then
+       allocate(fg_amp(0:npix-1,nmaps, num_fg_signal))
+       if (myid_chain == root) fg_amp = s%fg_amp
+       call mpi_bcast(fg_amp, size(fg_amp), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
+       !write(*,*) 'LEAVING FREE-FREE!!'
+       do k = 1, num_fg_signal
+          do j = 1, nmaps
+             do i = 0, map_size-1
+             if (.not. enforce_zero_cl .and. trim(fg_components(k)%type) == 'cmb' .and. mask(i,j)) cycle
+                !if (trim(fg_components(k)%type) == 'freefree') cycle
+                if (use_index_map) then
+                   call reorder_fg_params(ind_map(pixels(i),:,:), fg_par)
+                   f = get_effective_fg_spectrum(fg_components(k), map_id, fg_par%comp(k)%p(j,:), &
+                        & pixel=pixels(i), pol=j)
+                else
+                   f = fg_pix_spec_responses_fcn(map_id,i,j,k)
+                end if
+                my_signal(i,j) = my_signal(i,j) + f * fg_amp(pixels(i),j,k)
+             end do
+          end do
+       end do
+       if (allocated(fg_par%comp)) call deallocate_fg_params(fg_par)
+       deallocate(fg_amp)
+    end if
+
+    ! Compute the chi-square
+    my_chisq_map = 0.d0
+    do i = 0, map_size-1
+          residual(i,:) = cmbmaps_fcn(map_id,i,:) - my_signal(i,:)
+    end do
+    !residual = residual
+
+!!$    call int2string(map_id, band)
+!!$    call write_map('chires'//band//'.fits', residual)
+!!$    call mpi_finalize(ierr)
+!!$    stop
+  
+    call initialize_invN_dense_fcn(map_id, map_id)
+    call multiply_by_sqrt_inv_N(residual, invN_residual1)
+    if (sample_inside_mask) then
+       mask_state = INSIDE_MASK
+       call multiply_by_sqrt_inv_N(residual, invN_residual2)
+    else
+       invN_residual2 = 0.d0
+    end if
+    mask_state = OUTSIDE_MASK
+
+    do j = 1, nmaps
+       do i = 0, map_size-1
+          my_chisq_map(pixels(i),j) = invN_residual1(i,j)**2 + invN_residual2(i,j)**2
+       end do
+    end do
+
+    ! First output per-band chi-squares
+    if (myid_chain == root) output_chisq = present(iter)
+    call mpi_bcast(output_chisq, 1, MPI_LOGICAL, root, comm_chain, ierr)
+
+    if (output_chisq_band) then
+       allocate(my_chisq_band(numband), buffer(numband))
+       ! Return chisq per band
+       my_chisq_band = 0.d0
+       my_chisq_band(map_id) = sum(invN_residual1**2 * procmask)
+       call mpi_reduce(my_chisq_band, buffer, numband, MPI_DOUBLE_PRECISION, MPI_SUM, root, comm_chain, ierr)
+       if (myid_chain == root) chisq_band = buffer
+       ! Return number of degrees of freedom per band
+       my_chisq_band = 0.d0
+       my_chisq_band(map_id) = count(invN_residual1 /= 0.d0 * procmask)
+       call mpi_reduce(my_chisq_band, buffer, numband, MPI_DOUBLE_PRECISION, MPI_SUM, root, comm_chain, ierr)
+       if (myid_chain == root) nu_band = buffer
+       deallocate(my_chisq_band, buffer)
+    end if
+ 
+    if (output_chisq_band_fullsky) then
+       allocate(my_chisq_band(numband), buffer(numband))
+       ! Return chisq per band
+       my_chisq_band = 0.d0
+       my_chisq_band(map_id) = sum(invN_residual1**2 * procmask) + sum(invN_residual2**2 * procmask)
+       call mpi_reduce(my_chisq_band, buffer, numband, MPI_DOUBLE_PRECISION, MPI_SUM, root, comm_chain, ierr)
+       if (myid_chain == root) chisq_band_fullsky = buffer
+       deallocate(my_chisq_band, buffer)
+    end if
+  
+    if (output_stats_ .and. output_band_chisq .and. output_chisq) then                                                       
+       if (myid_chain == 0) then
+          c   = chain
+          i   = iter
+       end if
+       call mpi_bcast(i,   1,        MPI_INTEGER,   root, comm_chain, ierr)
+       call mpi_bcast(c,   1,        MPI_INTEGER,   root, comm_chain, ierr)
+
+       call int2string(map_id, band)
+       call int2string(i,      iter_text)
+       call int2string(c,      chain_text)
+       filename = trim(chain_dir) // '/chisq_' // trim(bp(map_id)%label) // '_c' // chain_text // '_k' // iter_text // '.fits'
+       call mpi_reduce(my_chisq_map, chisq_map_tot, size(my_chisq_map), MPI_DOUBLE_PRECISION, &
+            & MPI_SUM, root, comm_alms, ierr)
+
+    allocate(mask_output(0:npix-1,nmaps))
+    mask_output = 1.d0
+    if (.not. sample_inside_mask) then
+       where (my_chisq_map == 0.d0)
+          mask_output = 0.d0
+       end where
+    end if
+    where (mask_output == 0.d0)
+       chisq_map_tot = -1.6375d30
+    end where
+    if (myid_alms == root) call write_map(filename, chisq_map_tot, comptype='Chisq', ttype='Chisq')
+
+       allocate(outmap(0:npix-1,nmaps))
+       outmap = 0.d0
+       outmap(pixels,:) = residual
+       filename = trim(chain_dir) // '/residual_' // trim(bp(map_id)%label) // '_c' // chain_text // '_k' // iter_text // '.fits'
+       call mpi_reduce(outmap, chisq_map_tot, size(my_chisq_map), MPI_DOUBLE_PRECISION, &
+            & MPI_SUM, root, comm_alms, ierr)
+       where (mask_output == 0.d0)
+          chisq_map_tot = -1.6375d30
+       end where
+       if (myid_alms == root) call write_map(filename, chisq_map_tot, comptype='Residual', &
+            & unit=bp(map_id)%unit, nu_ref=bp(map_id)%nu_c)
+       deallocate(outmap)
+
+       allocate(outmap(0:npix-1,nmaps))
+       outmap = 0.d0
+       filename = trim(chain_dir) // '/frac_residual_' // trim(bp(map_id)%label) // '_c' // chain_text &
+            & // '_k' // iter_text // '.fits'
+       call mpi_reduce(outmap, chisq_map_tot, size(my_chisq_map), MPI_DOUBLE_PRECISION, &
+            & MPI_SUM, root, comm_alms, ierr)
+       where (mask_output == 0.d0)
+          chisq_map_tot = -1.6375d30
+       end where
+       if (myid_alms == root) call write_map(filename, chisq_map_tot, comptype='Chisq', ttype='Chisq')
+       deallocate(outmap, mask_output)
+
+    end if
+
+
+    ! Then output the co-added chisquare map
+    call mpi_reduce(my_chisq_map, chisq_map_tot, size(my_chisq_map), MPI_DOUBLE_PRECISION, &
+         & MPI_SUM, root, comm_chain, ierr)
+    if (myid_chain == root .and. present(chisq_map))   chisq_map = chisq_map_tot
+    if (myid_chain == root .and. output_chisq_fullsky) chisq_fullsky = sum(chisq_map_tot*procmask_full)
+
+    ! Output high-latitude value, if requested
+    if (output_chisq_highlat) then
+!       call mpi_reduce(sum(residual*invN_residual1), chisq_tot, 1, MPI_DOUBLE_PRECISION, &
+!            & MPI_SUM, root, comm_chain, ierr)
+       call mpi_reduce(sum(invN_residual1**2 * procmask), chisq_tot, 1, MPI_DOUBLE_PRECISION, &
+               & MPI_SUM, root, comm_chain, ierr)
+       if (myid_chain == root) chisq_highlat = chisq_tot
+    end if
+
+    ! Compute chisquare defined by RMS if requested
+    if (output_chisq_rms) then
+       call multiply_by_sqrt_inv_N(residual, invN_residual1, N_format='rms')
+       my_chisq = sum(invN_residual1**2 * procmask)
+       if (sample_inside_mask) then
+          mask_state = INSIDE_MASK
+          call multiply_by_sqrt_inv_N(residual, invN_residual2, N_format='rms')
+          mask_state = OUTSIDE_MASK
+          my_chisq = my_chisq + sum(invN_residual2**2 * procmask)
+       end if
+       call mpi_reduce(my_chisq, chisq_tot, 1, MPI_DOUBLE_PRECISION, MPI_SUM, root, comm_chain, ierr)
+       if (myid_chain == root) chisq_rms = chisq_tot
+    end if
+
+    if (allocated(ind_map)) deallocate(ind_map)
+    deallocate(invN_residual1)
+    deallocate(invN_residual2)
+    deallocate(my_chisq_map)
+    deallocate(chisq_map_tot)
+
+    deallocate(residual)
+    deallocate(my_signal)
+
+  end subroutine compute_total_chisq_nucorr
 
 
   subroutine sample_gain(handle, map_id, s, chain, iter)

@@ -135,7 +135,7 @@ contains
     real(dp), allocatable, dimension(:,:,:,:) :: inv_N_fcn
     real(dp), allocatable, dimension(:,:)     :: chisq_map
     real(dp), allocatable, dimension(:), save :: N_accept, N_total
-
+       
     ! If there are no parameters, don't try to sample them
     if (num_fg_par == 0) return
 
@@ -154,7 +154,6 @@ contains
     ! Distribute information
     allocate(residuals(0:npix-1,nmaps,numband))
     allocate(inv_N(0:npix-1,nmaps,numband))
-    if (freq_corr_noise) allocate(inv_N_fcn(numband,0:npix-1,nmaps,numband))
     allocate(fg_amp(0:npix-1,nmaps,num_fg_comp))
     
     if (myid_chain == root) then
@@ -194,12 +193,12 @@ contains
                          q = fg_components(i)%indregs(j)%regset(r)%r(k)
                          if (.not. freq_corr_noise) then
                             call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
-                                 & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth,mystat, &
+                                 & fg_components(i)%indregs(j)%regions(q), q, p, j, i, par_prop, par_smooth,mystat, &
                                  & chisq_in=chisq_in, chisq_out=chisq_out)
                          else
                             call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
-                                 & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth,mystat, &
-                                 & chisq_in=chisq_in, chisq_out=chisq_out, inv_Ns_rms_fcn=inv_N_fcn)
+                                 & fg_components(i)%indregs(j)%regions(q), q, p, j, i, par_prop, par_smooth,mystat, &
+                                 & chisq_in=chisq_in, chisq_out=chisq_out)
                          end if
                          chisq_prop_rms = chisq_prop_rms + chisq_out
                          chisq0_rms     = chisq0_rms     + chisq_in
@@ -212,12 +211,12 @@ contains
                       q = fg_components(i)%indregs(j)%regset(r)%r(k)
                       if (.not. freq_corr_noise) then
                          call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
-                              & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth, &
+                              & fg_components(i)%indregs(j)%regions(q), q, p, j, i, par_prop, par_smooth, &
                               & mystat, chisq_in=chisq_in, chisq_out=chisq_out)
                       else
                          call sample_spec_index_single_region(residuals, inv_N, fg_amp, &
-                              & fg_components(i)%indregs(j)%regions(q), p, j, i, par_prop, par_smooth, &
-                              & mystat, chisq_in=chisq_in, chisq_out=chisq_out, inv_Ns_rms_fcn=inv_N_fcn)
+                              & fg_components(i)%indregs(j)%regions(q), q, p, j, i, par_prop, par_smooth, &
+                              & mystat, chisq_in=chisq_in, chisq_out=chisq_out)
                       end if
                       if (par_prop(fg_components(i)%indregs(j)%regions(q)%pix(1,1),1,p) /= &
                            & par_prop(fg_components(i)%indregs(j)%regions(q)%pix(1,1),1,p)) then
@@ -341,7 +340,6 @@ contains
     deallocate(par0, par_prop, par_smooth, chisq_map)
     deallocate(residuals)
     deallocate(inv_N)
-    if (freq_corr_noise) deallocate(inv_N_fcn)
     deallocate(fg_amp)
 
   end subroutine sample_fg_pix_response_map
@@ -351,15 +349,15 @@ contains
   ! *                Engine routines                *
   ! *************************************************
 
-  subroutine sample_spec_index_single_region(data, inv_N_rms, amp, region, p, p_local, comp, par_map, &
-       & par_smooth, stat, chisq_in, chisq_out, inv_Ns_rms_fcn)
+  subroutine sample_spec_index_single_region(data, inv_N_rms, amp, region, pix_label, p, p_local, comp, par_map, &
+       & par_smooth, stat, chisq_in, chisq_out, inv_Ns_rms_fcn) !! MODDED FOR DEBUG
     implicit none
 
     real(dp), dimension(0:,1:,1:),    intent(in)     :: data, amp
     real(dp), dimension(0:,1:,1:),    intent(in)     :: inv_N_rms
     real(dp), dimension(1:,0:,1:,1:), intent(in),  optional :: inv_Ns_rms_fcn
     type(fg_region),                  intent(inout)  :: region
-    integer(i4b),                     intent(in)     :: p, p_local, comp
+    integer(i4b),                     intent(in)     :: p, p_local, comp, pix_label !! MODDED FOR DEBUG
     real(dp), dimension(0:,1:,1:),    intent(inout)  :: par_map, par_smooth
     integer(i4b),                     intent(out)    :: stat
     real(dp),                         intent(out), optional :: chisq_in, chisq_out
@@ -374,7 +372,6 @@ contains
     integer(i4b), save :: iteration = 0
     
     alpha = 1.d0
-
 !!$    if (trim(noise_format) /= 'rms') then
 !!$       write(*,*) 'ERROR -- MUST BE FIXED!!'
 !!$       alpha = 0.05d0
@@ -392,7 +389,6 @@ contains
     ! Prepare reduced data set
     npix_reg = region%n_ext
     allocate(d_reg(npix_reg,numband), amp_reg(npix_reg), invN_reg(npix_reg,numband))
-    if (freq_corr_noise .and. present(inv_Ns_rms_fcn)) allocate(invN_regs_fcn(numband,npix_reg,numband))
     allocate(s_reg(npix_reg), fg_par_reg(npix_reg), w_reg(npix_reg))
     allocate(pix_reg(npix_reg,2), inc_band(numband))
     par_old = par_map(region%pix(1,1),region%pix(1,2),p)
@@ -403,6 +399,7 @@ contains
     end if
     call cpu_time(t1)
     pix_reg     = region%pix_ext
+
     do i = 1, npix_reg
        pix = region%pix_ext(i,1)
        s   = region%pix_ext(i,2)
@@ -436,15 +433,9 @@ contains
        ! Set up inverse covariance
        do j = 1, numband
           invN_reg(i,j) = inv_N_rms(pix,s,j)
-          if (freq_corr_noise) then
-             do band_iter = 1, numband
-                invN_regs_fcn(band_iter,i,j) = inv_Ns_rms_fcn(band_iter,pix,s,j)
-             end do
-          end if
        end do
        if (fg_components(comp)%indmask(pix,s) < 0.5d0) then
           invN_reg(i,:) = 0.d0
-          if (freq_corr_noise) invN_regs_fcn(:,i,:) = 0.d0
        end if
     end do
     
@@ -453,7 +444,6 @@ contains
     if (sum(abs(invN_reg)) == 0.d0) then
        ! No data available; leave unchanged
        deallocate(d_reg, amp_reg, invN_reg, s_reg, fg_par_reg, w_reg, pix_reg, inc_band)
-       if (freq_corr_noise) deallocate(invN_regs_fcn)
        return
     end if
 
@@ -472,8 +462,7 @@ contains
        if (present(chisq_out)) chisq_out = -2.d0*lnL_specind_ARS(par)
 
     else
-       
-       ! Check if we are strongly at prior edges; in that case, return prior
+       ! Check if we are strongly at prior edges; in
        delta = 1.d-9 * (P_uni_reg(2)-P_uni_reg(1))
        return_prior = .false.
        if (lnL_specind_ARS(P_uni_reg(1))-lnL_specind_ARS(P_uni_reg(1)+delta) > 25.d0) then          
@@ -703,7 +692,6 @@ contains
     if (allocated(x_n)) deallocate(x_n)
     if (allocated(S_n)) deallocate(S_n)    
     deallocate(d_reg, amp_reg, invN_reg, fg_par_reg, s_reg, w_reg, pix_reg, inc_band)
-    if (freq_corr_noise) deallocate(invN_regs_fcn)
 
   end subroutine sample_spec_index_single_region
 
@@ -732,7 +720,7 @@ contains
     real(dp)     :: lnL, f, lnL_jeffreys, lnL_gauss, par(30)
     logical(lgt) :: jeffreys
     real(dp), allocatable, dimension(:,:) :: df
-    real(dp), allocatable, dimension(:,:) :: df_dummy_fcn
+    real(dp), allocatable, dimension(:,:) :: df_rhs
 
     if (x < fg_components(comp_reg)%priors(p_local_reg,1) .or. &
          & x > fg_components(comp_reg)%priors(p_local_reg,2)) then
@@ -753,31 +741,21 @@ contains
 !       par(p_local_reg) = max(min(x, P_uni_reg(2)), P_uni_reg(1))
        do j = 1, numband
           if (.not. inc_band(j)) cycle
-          if (.not. freq_corr_noise) then
              f = d_reg(i,j) - amp_reg(i) * get_effective_fg_spectrum(fg_components(comp_reg), &
-                  & j, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2))
+                     & j, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2))
              lnL = lnL - 0.5d0 * f * invN_reg(i,j) * f
-          else
-             contraction_fcn = 0.d0
-             do band_iter = 1, numband
-                f_rhs = d_reg(i,band_iter) - amp_reg(i) * get_effective_fg_spectrum(fg_components(comp_reg), &
-                         & band_iter, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2))
-                contraction_fcn = contraction_fcn + invN_regs_fcn(band_iter,i,j) * f_rhs
-             end do
-             lnL = lnL - 0.5d0 * f * contraction_fcn
-          end if
-          if (jeffreys) then
-             df(i,j) = -amp_reg(i) * get_effective_deriv_fg_spectrum(fg_components(comp_reg), &
-                  & j, p_local_reg, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2)) * w_reg(i)
-          end if
-          !write(*,*) i, j, lnL
-          !write(*,*) 'a', real(f,sp), real(amp_reg(i),sp), real(par(1:n),sp)
-!!$          if (pix_reg(i,1) == 22946) then
-!             write(*,fmt='(i6,7e16.8)') j, x, par(p_local_reg), d_reg(i,j), amp_reg(i), &
-!                  & get_effective_fg_spectrum(fg_components(comp_reg), &
-!x                  & j, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2)), w_reg(i), lnL
-!!$          end if
        end do
+       if (jeffreys) then
+          df(i,j) = -amp_reg(i) * get_effective_deriv_fg_spectrum(fg_components(comp_reg), &
+               & j, p_local_reg, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2)) * w_reg(i)
+       end if
+       !write(*,*) i, j, lnL
+       !write(*,*) 'a', real(f,sp), real(amp_reg(i),sp), real(par(1:n),sp)
+!!$       if (pix_reg(i,1) == 22946) then
+!          write(*,fmt='(i6,7e16.8)') j, x, par(p_local_reg), d_reg(i,j), amp_reg(i), &
+!               & get_effective_fg_spectrum(fg_components(comp_reg), &
+!x               & j, par(1:n), pixel=pix_reg(i,1), pol=pix_reg(i,2)), w_reg(i), lnL
+!!$       end if
     end do
 !!$    if (x == 0.683d0) then
 !!$       write(*,*) 'lnL(0.683) = ', lnL
@@ -786,15 +764,7 @@ contains
 
     ! Compute Jeffreys prior
     if (.false. .and. jeffreys) then
-       if (.not. freq_corr_noise) then
-          lnL_jeffreys = log(sqrt(sum(df * invN_reg * df)))
-       else
-          df_dummy_fcn = 0.d0
-          do band_iter = 1, numband
-             df_dummy_fcn = df_dummy_fcn + invN_regs_fcn(band_iter,:,:) * df
-          end do
-          lnL_jeffreys = log(sqrt(sum(df * df_dummy_fcn)))
-       end if
+       lnL_jeffreys = log(sqrt(sum(df * invN_reg * df)))
     else
        lnL_jeffreys = 0.d0
     end if
@@ -904,31 +874,18 @@ contains
 
     ! Distribute information
     allocate(all_residuals(0:npix-1,numband))
-    if (.not. freq_corr_noise) then
-       allocate(all_inv_N(0:npix-1,numband))
-    else if (freq_corr_noise .and. present(inv_Ns_in_fcn)) then
-       allocate(all_inv_Ns_fcn(numband,0:npix-1,numband))
-    end if
+    allocate(all_inv_N(0:npix-1,numband))
     allocate(my_fg_amp(0:npix-1,1,num_fg_comp))
     allocate(x_def(num_fg_comp))
 
     if (myid_chain == root) then
        all_residuals = residuals_in(:,1,:)
-       if (.not. freq_corr_noise) then
-          all_inv_N     = inv_N_in(:,1,:)
-       else if (freq_corr_noise .and. present(inv_Ns_in_fcn)) then
-          all_inv_Ns_fcn = inv_Ns_in_fcn(:,:,1,:)
-       end if
+       all_inv_N     = inv_N_in(:,1,:) !! ADDED FOR DEBUG
        my_fg_amp     = fg_amp
        nind          = size(index_map,3)
     end if
     call mpi_bcast(all_residuals, size(all_residuals), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
-    if (.not. freq_corr_noise) then
-       call mpi_bcast(all_inv_N,     size(all_inv_N),     MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
-    else if (freq_corr_noise .and. present(inv_Ns_in_fcn)) then
-       call mpi_bcast(all_inv_Ns_fcn(map_id,:,:), size(all_inv_Ns_fcn(map_id,:,:)), &
-                                                        & MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
-    end if
+    call mpi_bcast(all_inv_N,     size(all_inv_N),     MPI_DOUBLE_PRECISION, root, comm_chain, ierr) !! ADDED FOR DEBUG
     call mpi_bcast(my_fg_amp,     size(my_fg_amp),     MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
     call mpi_bcast(nind,          1,                   MPI_INTEGER,          root, comm_chain, ierr)
     allocate(ind_map(0:npix-1,nmaps,nind))
@@ -954,11 +911,7 @@ contains
     
     allocate(M(numband,num_fg_comp), A(num_fg_comp,num_fg_comp), b(num_fg_comp))
     allocate(my_residual(numband), p_default(nind))
-    if (.not. freq_corr_noise) then
-       allocate(my_inv_N(numband))
-    else if (freq_corr_noise .and. present(inv_Ns_in_fcn)) then
-       allocate(my_inv_Ns_fcn(numband,numband))
-    end if
+    allocate(my_inv_N(numband)) !! ADDED FOR DEBUG
     allocate(chisq_tot(0:npix-1,1))
     allocate(scale_reg(npar), x(npar), x_prop(npar))
 
@@ -1013,11 +966,7 @@ contains
 
        ! Run a non-linear search
        my_residual = all_residuals(p,:)
-       if (.not. freq_corr_noise) then
-          my_inv_N    = all_inv_N(p,:)
-       else if (freq_corr_noise .and. present(inv_Ns_in_fcn)) then
-          my_inv_Ns_fcn = all_inv_Ns_fcn(:,p,:)
-       end if
+       my_inv_N    = all_inv_N(p,:) !! ADDED FOR DEBUG
        N_scale     = 1.d0
 !       chisq0 = fg_init_chisq(x)
 
@@ -1134,11 +1083,7 @@ contains
           do j = 1, fg_components(i)%npar
              if (fg_components(i)%fwhm_p(j) == 0.) then 
                 do p = 0, npix-1
-                   if (.not. freq_corr_noise) then
-                      if (any(all_inv_N(p,:) /= 0.d0)) index_map(p,1,k) = buffer(p,1,k)
-                   else
-                      if (any(all_inv_Ns_fcn(:,p,:) /= 0.d0)) index_map(p,1,k) = buffer(p,1,k)
-                   end if
+                   if (any(all_inv_N(p,:) /= 0.d0)) index_map(p,1,k) = buffer(p,1,k) !! ADDED FOR DEBUG
                 end do
              end if
              k = k+1
@@ -1159,7 +1104,7 @@ contains
                 end do
              end if
           else
-             if (any(all_inv_Ns_fcn(:,p,:) /= 0.d0)) then
+             if (any(all_inv_N(p,:) /= 0.d0)) then !! ADDED FOR DEBUG
                 fg_amp(p,1,:) = buffer(p,1,:)
                 do i = 1, num_fg_comp
                    if (fg_components(i)%mask(p,1) < 0.5d0) fg_amp(p,1,i) = 0.d0
@@ -1205,11 +1150,7 @@ contains
 !!$    end if
 
     deallocate(A, x, x_prop, b, M, all_residuals, my_residual, scale_reg)
-    if (.not. freq_corr_noise) then
-       deallocate(all_inv_N, my_inv_N)
-    else
-       deallocate(all_inv_Ns_fcn, my_inv_Ns_fcn)
-    end if
+    deallocate(all_inv_N, my_inv_N)  !! ADDED FOR DEBUG
     deallocate(my_fg_amp, ind_map, p_default)
     deallocate(x_def)
 !!$    call mpi_finalize(ierr)
@@ -1398,7 +1339,7 @@ contains
                 l = l + fg_components(k)%npar
                 if (band_iter == i) s_main_fcn = s_main_fcn + signal
              end do
-             contraction_fcn = contraction_fcn + (my_residual(band_iter)-s) * (N_scale*my_inv_Ns_fcn(band_iter,i))
+             contraction_fcn = contraction_fcn + (my_residual(band_iter)-s) * (N_scale*my_inv_N(band_iter)) !! ADDED FOR DEBUG
           end do  
           chisq = chisq + (my_residual(i)-s_main_fcn) * contraction_fcn
        end do

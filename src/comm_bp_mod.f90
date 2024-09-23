@@ -4,10 +4,14 @@ module comm_bp_mod
   use sort_utils
   implicit none 
 
-  real(dp), parameter :: k_B      = 1.3806503d-23
-  real(dp), parameter :: h        = 1.0545726691251021d-34 * 2.d0*pi !6.626068d-34
-  real(dp), parameter :: c        = 2.99792458d8
+  !real(dp), parameter :: k_B      = 1.3806503d-23
+  !real(dp), parameter :: h        = 1.0545726691251021d-34 * 2.d0*pi !6.626068d-34
+  !real(dp), parameter :: c        = 2.99792458d8
   real(dp)            :: T_CMB    = 2.7255d0
+  !! SciPy constants
+  real(dp), parameter :: k_B      = 1.380649d-23 !! ADDED FOR DEBUG
+  real(dp), parameter :: h        = 6.62607015d-34 !! ADDED FOR DEBUG
+  real(dp), parameter :: c        = 2.99792458d8 !! ADDED FOR DEBUG
   character(len=128)  :: bp_model = 'additive_shift'
 
   interface sz_thermo
@@ -64,6 +68,11 @@ contains
     call get_parameter(paramfile, 'GAIN_INIT_RMS',          par_dp=gain_init_rms)
     call get_parameter(paramfile, 'BP_INIT_RMS',            par_dp=bp_init_rms)
     call get_parameter(paramfile, 'FREQ_CORR_NOISE',        par_lgt=freq_corr_noise)
+
+    if (myid == 0) then
+       write(*,*) '          Frequency correlated noise        = ', freq_corr_noise
+    end if
+
     if (trim(MJysr_convention) == 'PSM') then
        ind_iras = 0.d0
     else if (trim(MJysr_convention) == 'IRAS') then
@@ -175,7 +184,7 @@ contains
 88        close(unit)
        end if
     end if
-    
+
     if (myid_chain == 0) then
        do i = 1, numband
           if (bp(i)%gain_rms > 0.d0) &
@@ -229,7 +238,6 @@ contains
     bp%delta = delta
 
     do j = 1, numband
-
        n = bp(j)%n
 
        if (trim(bp_model) == 'linear_tilt') then
@@ -274,7 +282,6 @@ contains
           stop
        end if
 
-       
        ! Compute unit conversion factors
        if (trim(bp(j)%id) == 'delta') then
 
@@ -328,7 +335,36 @@ contains
                & tsum(bp(j)%nu, bp(j)%tau/bp(j)%nu**2 * bnu_prime * sz) * 1.d-6
           if (bp(j)%f2t <= 0.d0) bp(j)%f2t = tsum(bp(j)%nu, bp(j)%tau/bp(j)%nu**2 * &
                & (bp(j)%nu_c/bp(j)%nu)**ind_iras) * 1.d-14 / tsum(bp(j)%nu, bp(j)%tau/bp(j)%nu**2 * bnu_prime)
+    
+          !! HARD-CODING PYSM BP INTEGRATED A2Ts
+          if (j==1) bp(j)%a2t = 1.0111789393622295 !! ADDED FOR DEBUG
+          if (j==2) bp(j)%a2t = 1.0260661325109284 !! ADDED FOR DEBUG 
+          if (j==3) bp(j)%a2t = 1.0466757370735962 !! ADDED FOR DEBUG 
+          if (j==4) bp(j)%a2t = 1.215388583074546 !! ADDED FOR DEBUG 
+          if (j==5) bp(j)%a2t = 1.2740685766716962 !! ADDED FOR DEBUG 
+          !if (j==6) bp(j)%a2t = 1.4620868195117018 !! ADDED FOR DEBUG  >120
+          if (j==6) bp(j)%a2t = 1.7146560244001687 !! ADDED FOR DEBUG 
+          if (j==7) bp(j)%a2t = 1.8421489208209403 !! ADDED FOR DEBUG 
+          if (j==8) bp(j)%a2t = 3.1764245164267617 !! ADDED FOR DEBUG 
+          if (j==9) bp(j)%a2t = 5.200386146161408 !! ADDED FOR DEBUG 
+          !if (j==11) bp(j)%a2t = 12.979398909464031 !! ADDED FOR DEBUG >353
+          !if (j==12) bp(j)%a2t = 138.69830491528026 !! ADDED FOR DEBUG >545
+          
           bp(j)%tau = bp(j)%tau / tsum(bp(j)%nu, bp(j)%tau/a2t)
+          !! HARD-CODING PYSM BP INTEGRATED A2Ts
+          if (j==1) bp(j)%tau = (/1.52454671d-10,2.52016905d-10/) !! ADDED FOR DEBUG
+          if (j==2) bp(j)%tau = (/8.05577594d-11,1.47456937d-10/) !! ADDED FOR DEBUG
+          if (j==3) bp(j)%tau = (/6.16318843d-11,1.12814072d-10/) !! ADDED FOR DEBUG
+          if (j==4) bp(j)%tau = (/4.54821607d-11,7.36735827d-11/) !! ADDED FOR DEBUG
+          if (j==5) bp(j)%tau = (/4.26593331d-11,6.91010684d-11/) !! ADDED FOR DEBUG
+          !if (j==6) bp(j)%tau = (/3.87558064d-11,6.27780005d-11/) !! ADDED FOR DEBUG  >120
+          if (j==6) bp(j)%tau = (/4.20671330d-11,6.54348121d-11/) !! ADDED FOR DEBUG
+          if (j==7) bp(j)%tau = (/4.22792179d-11,6.57647070d-11/) !! ADDED FOR DEBUG
+          if (j==8) bp(j)%tau = (/5.13629272d-11,7.98942843d-11/) !! ADDED FOR DEBUG
+          if (j==9) bp(j)%tau = (/6.8518167d-11,1.0657901d-10/) !! ADDED FOR DEBUG
+          !if (j==11) bp(j)%tau = (/1.30716227d-10,2.03373835d-10/) !! ADDED FOR DEBUG >353
+          !if (j==12) bp(j)%tau = (/9.05333433d-10,1.40823295d-09/) !! ADDED FOR DEBUG >545
+          
           deallocate(a2t, bnu_prime, bnu_prime_RJ, sz)
 
        else if (trim(bp(j)%id) == 'HFI_cmb' .or. trim(bp(j)%id) == 'PSM_LFI') then
@@ -400,10 +436,9 @@ contains
        end if
 
     end do
-
+    
     ! Revert to old value if not overwrite; use with caution
     if (.not. overwrite_) bp%delta = buffer
-
   end subroutine update_tau
 
 
@@ -705,7 +740,7 @@ contains
     real(dp), allocatable, dimension(:) :: x, y
 
     unit = getlun()
-    
+
     inquire(file=trim(filename), exist=exist)
     if (.not. exist) then
        write(*,*) 'Bandpass file does not exist = ', trim(filename)
@@ -757,6 +792,7 @@ contains
     end if
     
     n = last-first+1
+    
     allocate(nu(n), tau(n))
     nu  = x(first:last)
     tau = y(first:last)

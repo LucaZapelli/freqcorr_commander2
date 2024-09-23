@@ -176,8 +176,7 @@ program commander
      call mpi_recv(base_seed, 1, MPI_INTEGER, root, 98, MPI_COMM_WORLD, status, ierr)
      call rand_init(rng_handle, base_seed)
   end if
-
-
+  
   ! ************************************************
   ! *               Initialize modules             *
   ! ************************************************
@@ -204,7 +203,6 @@ program commander
 !!$        write(*,*) trim(bp(i)%label), get_bp_line_ant(i, 345.80d9) *  compute_ant2thermo_single(345.80d9)
 !!$     end do
 !!$  end if
-
   call initialize_fg_mod(mychain, comm_chain, comm_alms, rng_handle, paramfile)
   if (.false.) then
      if (myid_chain == root) then
@@ -380,7 +378,6 @@ program commander
   ! **************************************************************
   ! *                   Carry out computations                   *
   ! **************************************************************
-
 
   if (myid == root .and. verbosity > 0) write(*,*) '     Starting Gibbs sampling'
 
@@ -607,7 +604,8 @@ contains
           if (.not. freq_corr_noise) then
              call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp)
           else
-             call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp, inv_Ns_scaled_fcn)
+             call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp)!, inv_Ns_scaled_fcn) !!
+             !! COMMENTED FOR DEBUG
           end if
           call update_fg_pix_response_maps(fg_param_map)
           !call update_cgd_constraint_module
@@ -661,7 +659,7 @@ contains
              end where
           end if
              
-             ! Enforce zero CMB monopole and dipole if requested; transfer CMB offsets to template coefficients
+          ! Enforce zero CMB monopole and dipole if requested; transfer CMB offsets to template coefficients
           if (.not. enforce_zero_cl .and. sample_fg_pix) call set_pix_cmb_equal_to_Cl_cmb(s_i)
           call set_exclude_fg_amp(.false.)
        end if
@@ -679,7 +677,7 @@ contains
                      & s_i%fg_amp, fg_param_map, iter==1)
              else
                 call enforce_pos_amps(chain_dir, residuals_lowres, inv_N_scaled, &
-                     & s_i%fg_amp, fg_param_map, iter==1, inv_Ns_scaled_fcn)
+                     & s_i%fg_amp, fg_param_map, iter==1)!, inv_Ns_scaled_fcn) !! COMMENTED FOR DEBUG
              end if
           end if
        end if
@@ -706,9 +704,12 @@ contains
           end do
        end do
 
+
        ! **********************************************
        !             Sample spectral indices
        ! **********************************************
+       
+       !! Not sampling in freq_corr_noise mode
        if (num_fg_par > 0 .and. stat == 0) then
           if (verbosity > 1) write(*,*) 'Chain no. ', chain, ' -- sampling spectral indices'
           call compute_lowres_residual(s_i)
@@ -716,9 +717,6 @@ contains
           if (.not. freq_corr_noise) then
              call sample_spectral_param_map(s_i, residuals_lowres, inv_N_scaled, &
                   & fg_amp_lowres, fg_param_map, stat)
-          else
-             call sample_spectral_param_map(s_i, residuals_lowres, inv_N_scaled, &
-                  & fg_amp_lowres, fg_param_map, stat, inv_Ns_scaled_fcn)
           end if
           if (stat == 0) call update_fg_pix_response_maps(fg_param_map)
        end if
@@ -737,7 +735,7 @@ contains
           if (.not. freq_corr_noise) then
              call sample_global_fg_par(rng_handle, s_i, residuals_lowres, inv_N_scaled, fg_param_map, stat)
           else
-             call sample_global_fg_par(rng_handle, s_i, residuals_lowres, inv_N_scaled, fg_param_map, stat, inv_Ns_scaled_fcn)
+             call sample_global_fg_par(rng_handle, s_i, residuals_lowres, inv_N_scaled, fg_param_map, stat)!, inv_Ns_scaled_fcn) !!
           end if
           if (stat == 0) call update_fg_pix_response_maps(fg_param_map)
        end if
@@ -779,17 +777,18 @@ contains
              if (verbosity > 1) write(*,*) 'Chain no. ', chain, ' -- sampling noise RMS amplitudes'
              call sample_noiseamps(rng_handle, s_i, noiseamp)
              call set_noiseamps(noiseamp)
-             if (.not. freq_corr_noise) then
+             !if (.not. freq_corr_noise) then  !! COMMENTED FOR DEBUG
                 do j = 1, numband
                    inv_N_scaled(:,:,j) = inv_N_lowres(:,:,j) / noiseamp(j)**2
                 end do
-             else
-                do j = 1, numband
-                   do band_iter = 1, numband
-                      inv_Ns_scaled_fcn(band_iter,:,:,j) = inv_Ns_lowres_fcn(band_iter,:,:,j) / noiseamp(j)**2
-                   end do
-                end do
-             end if
+             !else  !! COMMENTED FOR DEBUG
+             !   do j = 1, numband  !! COMMENTED FOR DEBUG
+             !      do band_iter = 1, numband  !! COMMENTED FOR DEBUG
+             !         inv_Ns_scaled_fcn(band_iter,:,:,j) = inv_Ns_lowres_fcn(band_iter,:,:,j) / noiseamp(j)**2  !! COMMENTED FOR
+             !         DEBUG
+             !      end do   !! COMMENTED FOR DEBUG
+             !   end do  !! COMMENTED FOR DEBUG
+             !end if  !! COMMENTED FOR DEBUG
           end if
 !!$          write(*,*) 'f'
 !!$          call output_sample(paramfile, 2, 6, s_i, skip_freq, cl_i, fg_param_map, noiseamp, bp%gain, bp%delta)
@@ -823,7 +822,8 @@ contains
              if (.not. freq_corr_noise) then
                 call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp)
              else
-                call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp, inv_Ns_scaled_fcn)
+                call init_ind_by_nonlin_search(residuals_lowres, inv_N_scaled, fg_param_map, s_i%fg_amp)!, inv_Ns_scaled_fcn) !!
+                !!COMMENTED FOR DEBUG
              end if
              call update_fg_pix_response_maps(fg_param_map)
           end if
@@ -893,7 +893,7 @@ contains
        deallocate(fg_amp_lowres)
        deallocate(fg_param_map)
     end if
-
+  
   end subroutine compute_single_chain
 
 
@@ -1238,8 +1238,8 @@ contains
                 call output_pixel_to_file(object_dir, chain, objname(i), pix(i), iter, &
                      & cmbmaps_lowres(pix(i),:,:), inv_N_scaled(pix(i),:,:), cmb_pix(i,:), &
                      & tempamps, fg_temp_lowres(pix(i),:,:,:), &
-                     & s_i%fg_amp(pix(i),:,:), par_smooth(pix(i),:,:), chisq_map(pix(i),1), &
-                     & inv_Ns_scaled_fcn(:,pix(i),:,:))
+                     & s_i%fg_amp(pix(i),:,:), par_smooth(pix(i),:,:), chisq_map(pix(i),1))!, & !! COMMENTED FOR DEBUG
+                     !!& inv_Ns_scaled_fcn(:,pix(i),:,:))  !! COMMENTED FOR DEBUG
              end if
           end do
        end if

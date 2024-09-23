@@ -39,7 +39,6 @@ contains
     real(dp), allocatable, dimension(:,:,:) :: cls0, cls1
     real(dp), allocatable, dimension(:)     :: x_lin
 
-
     ! Allocate data vectors
     call allocate_genvec(Ax)
     call allocate_genvec(x)

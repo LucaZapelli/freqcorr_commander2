@@ -404,66 +404,33 @@ contains
        fg_temp_lowres = 0.d0
        inv_N_lowres  = 0.d0
 
-       if (.not. freq_corr_noise) then
-          do i = 1, numband
-             call int2string(i, map_text)
+       do i = 1, numband
+          call int2string(i, map_text)
 
-             paramtext = 'NOISE_RMS' // map_text
-             call get_parameter(paramfile, trim(paramtext), par_string=rmsfile)
-             paramtext = 'REG_NOISE_SCALE' // map_text
-             call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_scale)
-             paramtext = 'REGULARIZATION_NOISE'
-             call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_noise)
-             my_reg_noise = my_reg_noise * my_reg_scale
+          paramtext = 'NOISE_RMS' // map_text
+          call get_parameter(paramfile, trim(paramtext), par_string=rmsfile)
+          paramtext = 'REG_NOISE_SCALE' // map_text
+          call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_scale)
+          paramtext = 'REGULARIZATION_NOISE'
+          call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_noise)
+          my_reg_noise = my_reg_noise * my_reg_scale
 
-             allocate(map_in(0:npix-1,nmaps))
-             call read_map(rmsfile, map_in)
-             if (my_reg_noise > 0.d0) then
-                map_in = my_reg_noise
-             else if (my_reg_noise < 0.d0) then
-                map_in = sqrt(map_in**2 + my_reg_noise**2)
-             end if
-             do j = 0, npix-1
-                do k = 1, nmaps
-                   if ((mask_lowres(j,k) > 0.5d0 .or. sample_inside_mask) .and. map_in(j,k) > 0.d0) then
-                      inv_N_lowres(j,k,i) = 1.d0 / map_in(j,k)**2
-                   end if
-                end do
-             end do
-             deallocate(map_in)
-          end do
-       else
-          do i = 1, numband
-             call int2string(i, map_text)
-             do band_iter = 1, numband
-                call int2string(band_iter, map2_text)
-                
-                paramtext = 'NOISE_RMS' // map2_text
-                call get_parameter(paramfile, trim(paramtext), par_string=rmsfile)
-                paramtext = 'REG_NOISE_SCALE' // map2_text
-                call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_scale)
-                paramtext = 'REGULARIZATION_NOISE'
-                call get_parameter(paramfile, trim(paramtext), par_dp=my_reg_noise)
-                my_reg_noise = my_reg_noise * my_reg_scale
-
-                allocate(map_in(0:npix-1,nmaps))
-                call read_map(rmsfile, map_in)
-                if (my_reg_noise > 0.d0) then
-                   map_in = my_reg_noise
-                else if (my_reg_noise < 0.d0) then
-                   map_in = sqrt(map_in**2 + my_reg_noise**2)
+          allocate(map_in(0:npix-1,nmaps))
+          call read_map(rmsfile, map_in)
+          if (my_reg_noise > 0.d0) then
+             map_in = my_reg_noise
+          else if (my_reg_noise < 0.d0) then
+             map_in = sqrt(map_in**2 + my_reg_noise**2)
+          end if
+          do j = 0, npix-1
+             do k = 1, nmaps
+                if ((mask_lowres(j,k) > 0.5d0 .or. sample_inside_mask) .and. map_in(j,k) > 0.d0) then
+                   inv_N_lowres(j,k,i) = 1.d0 / map_in(j,k)**2
                 end if
-                do j = 0, npix-1
-                   do k = 1, nmaps
-                      if ((mask_lowres(j,k) > 0.5d0 .or. sample_inside_mask) .and. map_in(j,k) > 0.d0) then
-                         inv_Ns_lowres_fcn(band_iter,j,k,i) = 1.d0 / map_in(j,k)**2
-                      end if
-                   end do
-                end do
-                deallocate(map_in)
              end do
           end do
-       end if
+          deallocate(map_in)
+       end do
 
        do i = 1, numband
           if (sample_T_modes) then
@@ -502,11 +469,6 @@ contains
         if (.not. allocated(inv_N_scaled)) allocate(inv_N_scaled(0:npix-1, nmaps, numband))
         call mpi_bcast(inv_N_lowres, size(inv_N_lowres), MPI_DOUBLE_PRECISION, root, comm_chain, ierr)
         inv_N_scaled = inv_N_lowres
-        if (freq_corr_noise) then
-           if (.not. allocated(inv_Ns_lowres_fcn)) allocate(inv_Ns_lowres_fcn(numband, 0:npix-1, nmaps, numband))
-           if (.not. allocated(inv_Ns_scaled_fcn)) allocate(inv_Ns_scaled_fcn(numband, 0:npix-1, nmaps, numband))
-           inv_Ns_scaled_fcn = inv_Ns_lowres_fcn
-        end if
      end if
 
      allocate(tempamp(num_fg_temp,numband))
@@ -1346,7 +1308,7 @@ contains
     else
        main_band_id = map_id
     end if
-
+    
     if (myid_chain == root) call get_parameter(paramfile, 'CHAIN_DIRECTORY',    par_string=chain_dir)
 
     allocate(numval(nmaps))
@@ -1477,7 +1439,6 @@ contains
     
     ! Output CMB map and covariance
     if (myid_chain == root) then
-
        if (myid_chain == root) write(*,*) 'Inverting Ft*invN*F'
        call invert_matrix(Ft_invN_F, cholesky=.true.)
        Ft_invN_d = matmul(Ft_invN_F, Ft_invN_d)

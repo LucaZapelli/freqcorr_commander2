@@ -55,10 +55,10 @@ contains
     character(len=128),          intent(in) :: paramfile_
 
     integer(i4b)       :: i, j, k, l, m, n, ind, ierr, map, pix, unit
-    logical(lgt)       :: polarization !, sample_inside_mask
+    logical(lgt)       :: polarization
     real(dp)           :: reg_noise, reg_scale
     character(len=2)   :: map_text, map2_text, i_text
-    character(len=128) :: noisefile, paramtext !, maskfile
+    character(len=128) :: noisefile, paramtext
     real(dp),     allocatable, dimension(:,:) :: noisemap, map_in
     real(dp),     allocatable, dimension(:,:) :: mask
 
@@ -91,7 +91,7 @@ contains
     if (freq_corr_noise) then
        call int2string(map_id, map2_text)
     end if
-    
+
     reg_noise = reg_noise * reg_scale
     npix    = 12*nside**2
     numcomp = (lmax+1)**2
@@ -115,11 +115,7 @@ contains
     call read_map(maskfile, mask)
 
     ! Read noise RMS maps -- this is always needed
-    if (freq_corr_noise) then
-       paramtext = 'NOISE_RMS' // map_text // map2_text
-    else
-       paramtext = 'NOISE_RMS' // map_text
-    end if
+    paramtext = 'NOISE_RMS' // map_text
     call get_parameter(paramfile, trim(paramtext), par_string=noisefile)
     
     allocate(invN_rms(0:map_size-1,nmaps,2))
@@ -241,11 +237,11 @@ contains
     !logical(lgt)       :: sample_inside_mask
     real(dp)           :: reg_noise, reg_scale
     character(len=2)   :: map_text
-    character(len=128) :: noisefile, paramtext !, maskfile
+    character(len=128) :: noisefile, paramtext
     real(dp),     allocatable, dimension(:,:) :: noisemap, mask
     
     call int2string(band_id_in, map_text)
-
+    
     call get_parameter(paramfile, 'REGULARIZATION_NOISE',      par_dp=reg_noise) 
     call get_parameter(paramfile, 'REG_NOISE_SCALE'//map_text, par_dp=reg_scale)
     reg_noise = reg_noise * reg_scale
@@ -279,7 +275,7 @@ contains
     end do
     sqrt_invN_rms = sqrt(invN_rms)
     deallocate(noisemap)
-  
+   
   end subroutine initialize_invN_rms_fcn
 
 
@@ -317,10 +313,10 @@ contains
        call mpi_finalize(ierr)
        stop
     end if
-       
+      
     read(unit) i ! Ordering
     read(unit) i ! Polarization status
-    !write(*,fmt='(a,i8,i8)') 'Size of inverse noise covariance matrix         = ', n, col_to-col_from+1
+    !write(*,fmt='(a,i8,i8)') 'Size of inverse noise covariance matrix         = ', n, col_to-col_from+1 
     do i = 1, col_from-1
        read(unit) 
     end do
@@ -341,7 +337,7 @@ contains
     read(unit) n
     read(unit) i ! Ordering
     read(unit) i ! Polarization status
-    !write(*,fmt='(a,i8,i8)') 'Size of sqrt of inverse noise covariance matrix = ', n, col_to-col_from+1
+    !write(*,fmt='(a,i8,i8)') 'Size of sqrt of inverse noise covariance matrix = ', n, col_to-col_from+1 
     do i = 1, col_from-1
        read(unit) 
     end do

@@ -92,7 +92,7 @@ contains
 
     ! Read low-resolution beam transfer function
     allocate(beam_lowres(0:lmax_lowres, nmaps))
-    !call gaussbeam(fwhm_lowres, lmax_lowres, beam_lowres) ! Setting lowres from low-ls
+    !call gaussbeam(fwhm_lowres, lmax_lowres, beam_lowres)  !! Setting lowres from low-ls
     if (lmax_lowres <= lmax) then
        beam_lowres = beam(0:lmax_lowres, 1:nmaps)
     end if
@@ -101,7 +101,6 @@ contains
     !call read_pixwin(nside, nmaps, pixwin)
     beam_lowres = beam_lowres * pixwin(0:lmax_lowres,1:nmaps)
     deallocate(pixwin)
-    
 
     if (trim(convolution_method) == 'transfer_function') then
 
